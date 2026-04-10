@@ -8,6 +8,7 @@ import {
 } from "emdash/ui";
 import { createPublicPageContext } from "emdash/page";
 import LiveSearch from "emdash/ui/search";
+import Seo from '@jdevalk/astro-seo-graph/Seo.astro';
 import "../styles/theme.css";
 
 interface Props {
@@ -77,7 +78,19 @@ const isLoggedIn = !!Astro.locals.user;
 			href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&family=JetBrains+Mono:wght@400;500&display=swap"
 			rel="stylesheet"
 		/>
-		<title>{fullTitle}</title>
+		<Seo
+			title={title}
+			titleTemplate={`%s — ${siteTitle}`}
+			description={description ?? undefined}
+			ogType={type === 'article' ? 'article' : 'website'}
+			ogImage={image ?? undefined}
+			ogImageAlt={title}
+			ogImageWidth={1200}
+			ogImageHeight={675}
+			siteName={siteTitle}
+			twitter={{ site: '@courtneyr_dev', creator: '@courtneyr_dev' }}
+			article={type === 'article' ? { publishedTime: publishedTime ? new Date(publishedTime) : undefined, tags: [] } : undefined}
+		/>
 		<EmDashHead page={pageCtx} />
 		<script is:inline>
 			// Apply theme immediately to prevent flash
