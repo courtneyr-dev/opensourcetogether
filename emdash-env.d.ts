@@ -25,6 +25,7 @@ export interface Post {
   featured_image?: { id: string; src?: string; alt?: string; width?: number; height?: number };
   content?: PortableTextBlock[];
   excerpt?: string;
+  kind?: "note" | "article" | "photo" | "video" | "audio" | "reply" | "like" | "repost" | "bookmark" | "rsvp" | "checkin" | "listen" | "watch" | "read" | "play" | "eat" | "drink" | "chat" | "event" | "review" | "recipe" | "favorite" | "jam" | "wish" | "mood" | "acquisition" | "tag-reply" | "quotation";
   createdAt: Date;
   updatedAt: Date;
   publishedAt: Date | null;

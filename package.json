@@ -18,6 +18,8 @@
     "@emdash-cms/plugin-webhook-notifier": "^0.1.0",
     "@jdevalk/astro-seo-graph": "^0.4.2",
     "astro": "^6.1.2",
+    "@opensourcetogether/emdash-indieweb": "file:../indieweb-astro/packages/emdash-indieweb",
+    "@opensourcetogether/indieweb-core": "file:../indieweb-astro/packages/indieweb-core",
     "emdash": "^0.1.0",
     "react": "^19.2.4",
     "react-dom": "^19.2.4"

@@ -15,6 +15,7 @@ import {
 import Base from "../../layouts/Base.astro";
 import PostCard from "../../components/PostCard.astro";
 import { getReadingTime } from "../../utils/reading-time";
+import { getPostKind } from "@opensourcetogether/indieweb-core/kinds";
 
 const { slug } = Astro.params;
 
@@ -94,6 +95,11 @@ const publishDate =
 		month: "long",
 		day: "numeric",
 	}) ?? null;
+
+// Post kind metadata
+const kind = (post.data as Record<string, unknown>).kind as string | undefined;
+const kindDef = kind ? getPostKind(kind) : null;
+const d = post.data as Record<string, unknown>;
 ---
 
 <Base
@@ -217,6 +223,202 @@ const publishDate =
 						)
 					}
 				</header>
+
+				{/* Kind-specific metadata */}
+				{kind && kind !== 'article' && kind !== 'note' && kind !== 'chat' && (
+					<div class="post-kind-context">
+						{kindDef && (
+							<span class="pk-kind-label">{kindDef.name}</span>
+						)}
+
+						{/* Citation kinds: reply, like, repost, bookmark, rsvp, quotation */}
+						{kind === 'reply' && d.inReplyTo && (
+							<div class="pk-citation">
+								<span class="pk-citation__label">In reply to</span>
+								<a class="u-in-reply-to" href={d.inReplyTo as string}>
+									{(d.citationName as string) || (() => { try { return new URL(d.inReplyTo as string).hostname; } catch { return d.inReplyTo as string; } })()}
+								</a>
+								{d.citationAuthor && <span class="pk-citation__author">by {d.citationAuthor as string}</span>}
+							</div>
+						)}
+						{kind === 'like' && d.likeOf && (
+							<div class="pk-citation">
+								<span class="pk-citation__label">Liked</span>
+								<a class="u-like-of" href={d.likeOf as string}>
+									{(d.citationName as string) || (() => { try { return new URL(d.likeOf as string).hostname; } catch { return d.likeOf as string; } })()}
+								</a>
+								{d.citationAuthor && <span class="pk-citation__author">by {d.citationAuthor as string}</span>}
+							</div>
+						)}
+						{kind === 'repost' && d.repostOf && (
+							<div class="pk-citation">
+								<span class="pk-citation__label">Reposted</span>
+								<a class="u-repost-of" href={d.repostOf as string}>
+									{(d.citationName as string) || (() => { try { return new URL(d.repostOf as string).hostname; } catch { return d.repostOf as string; } })()}
+								</a>
+								{d.citationAuthor && <span class="pk-citation__author">by {d.citationAuthor as string}</span>}
+							</div>
+						)}
+						{kind === 'bookmark' && d.bookmarkOf && (
+							<div class="pk-citation">
+								<span class="pk-citation__label">Bookmarked</span>
+								<a class="u-bookmark-of" href={d.bookmarkOf as string}>
+									{(d.citationName as string) || (() => { try { return new URL(d.bookmarkOf as string).hostname; } catch { return d.bookmarkOf as string; } })()}
+								</a>
+								{d.citationAuthor && <span class="pk-citation__author">by {d.citationAuthor as string}</span>}
+							</div>
+						)}
+						{kind === 'rsvp' && d.inReplyTo && (
+							<div class="pk-citation">
+								<span class="pk-citation__label">
+									{d.rsvp === 'yes' ? 'Attending' : d.rsvp === 'no' ? 'Not attending' : d.rsvp === 'maybe' ? 'Maybe attending' : 'Interested in'}
+								</span>
+								<a class="u-in-reply-to" href={d.inReplyTo as string}>
+									{(d.citationName as string) || (() => { try { return new URL(d.inReplyTo as string).hostname; } catch { return d.inReplyTo as string; } })()}
+								</a>
+								<data class="p-rsvp" value={d.rsvp as string} hidden />
+							</div>
+						)}
+						{kind === 'quotation' && d.quotationOf && (
+							<blockquote class="pk-quotation">
+								<cite>
+									<a class="u-quotation-of" href={d.quotationOf as string}>
+										{(d.citationName as string) || (() => { try { return new URL(d.quotationOf as string).hostname; } catch { return d.quotationOf as string; } })()}
+									</a>
+									{d.citationAuthor && <span> — {d.citationAuthor as string}</span>}
+								</cite>
+							</blockquote>
+						)}
+
+						{/* Media cards: listen, watch, read, play, jam */}
+						{kind === 'listen' && d.listenTrack && (
+							<div class="pk-media-card">
+								{d.listenCover && <img class="pk-media-card__image" src={d.listenCover as string} alt="" />}
+								<div class="pk-media-card__info">
+									<strong>{d.listenTrack as string}</strong>
+									{d.listenArtist && <span>{d.listenArtist as string}</span>}
+									{d.listenAlbum && <span class="pk-media-card__meta">{d.listenAlbum as string}</span>}
+									{d.listenRating != null && <span>{'★'.repeat(d.listenRating as number)}{'☆'.repeat(5 - (d.listenRating as number))}</span>}
+								</div>
+								{d.listenUrl && <data class="u-listen-of" value={d.listenUrl as string} hidden />}
+							</div>
+						)}
+						{kind === 'watch' && d.watchTitle && (
+							<div class="pk-media-card">
+								{d.watchPoster && <img class="pk-media-card__image pk-media-card__image--portrait" src={d.watchPoster as string} alt="" />}
+								<div class="pk-media-card__info">
+									{d.watchMediaType && <span class="pk-badge">{d.watchMediaType === 'tv' ? 'TV' : 'Movie'}</span>}
+									{d.watchStatus && <span class="pk-badge">{d.watchStatus as string}</span>}
+									<strong>{d.watchTitle as string}</strong>
+									{d.watchYear && <span>({d.watchYear as string})</span>}
+									{d.watchDirector && <span>Dir. {d.watchDirector as string}</span>}
+									{d.watchRating != null && <span>{'★'.repeat(d.watchRating as number)}{'☆'.repeat(5 - (d.watchRating as number))}</span>}
+								</div>
+							</div>
+						)}
+						{kind === 'read' && d.readTitle && (
+							<div class="pk-media-card">
+								{d.readCover && <img class="pk-media-card__image pk-media-card__image--portrait" src={d.readCover as string} alt="" />}
+								<div class="pk-media-card__info">
+									{d.readStatus && <span class="pk-badge">{d.readStatus as string}</span>}
+									<strong>{d.readTitle as string}</strong>
+									{d.readAuthor && <span>by {d.readAuthor as string}</span>}
+									{d.readProgress != null && <span>Progress: {d.readProgress as number}%</span>}
+									{d.readRating != null && <span>{'★'.repeat(d.readRating as number)}{'☆'.repeat(5 - (d.readRating as number))}</span>}
+								</div>
+							</div>
+						)}
+						{kind === 'play' && d.playTitle && (
+							<div class="pk-media-card">
+								{d.playCover && <img class="pk-media-card__image pk-media-card__image--portrait" src={d.playCover as string} alt="" />}
+								<div class="pk-media-card__info">
+									{d.playStatus && <span class="pk-badge">{d.playStatus as string}</span>}
+									<strong>{d.playTitle as string}</strong>
+									{d.playPlatform && <span>{d.playPlatform as string}</span>}
+									{d.playHours != null && <span>{d.playHours as number} hours played</span>}
+									{d.playRating != null && <span>{'★'.repeat(d.playRating as number)}{'☆'.repeat(5 - (d.playRating as number))}</span>}
+								</div>
+							</div>
+						)}
+						{kind === 'jam' && d.jamTrack && (
+							<div class="pk-media-card">
+								{d.jamCover && <img class="pk-media-card__image" src={d.jamCover as string} alt="" />}
+								<div class="pk-media-card__info">
+									<span class="pk-badge">Now Playing</span>
+									<strong>{d.jamTrack as string}</strong>
+									{d.jamArtist && <span>{d.jamArtist as string}</span>}
+									{d.jamAlbum && <span class="pk-media-card__meta">{d.jamAlbum as string}</span>}
+								</div>
+							</div>
+						)}
+
+						{/* Location: checkin */}
+						{kind === 'checkin' && d.checkinName && (
+							<div class="pk-location-card">
+								<span class="pk-location-card__icon">&#x1F4CD;</span>
+								<div>
+									<strong class="p-location">{d.checkinName as string}</strong>
+									{(d.checkinLocality || d.checkinRegion) && (
+										<span class="pk-location-card__address">
+											{[d.checkinLocality, d.checkinRegion, d.checkinCountry].filter(Boolean).join(', ')}
+										</span>
+									)}
+								</div>
+							</div>
+						)}
+
+						{/* Food/drink */}
+						{kind === 'eat' && d.eatName && (
+							<div class="pk-lifelog-card">
+								{d.eatPhoto && <img class="pk-lifelog-card__photo" src={d.eatPhoto as string} alt="" />}
+								<div>
+									<strong>{d.eatName as string}</strong>
+									{d.eatCuisine && <span>{d.eatCuisine as string}</span>}
+									{d.eatLocationName && <span>at {d.eatLocationName as string}</span>}
+									{d.eatRating != null && <span>{'★'.repeat(d.eatRating as number)}{'☆'.repeat(5 - (d.eatRating as number))}</span>}
+								</div>
+							</div>
+						)}
+						{kind === 'drink' && d.drinkName && (
+							<div class="pk-lifelog-card">
+								{d.drinkPhoto && <img class="pk-lifelog-card__photo" src={d.drinkPhoto as string} alt="" />}
+								<div>
+									<strong>{d.drinkName as string}</strong>
+									{d.drinkType && <span>{d.drinkType as string}</span>}
+									{d.drinkBrewery && <span>{d.drinkBrewery as string}</span>}
+									{d.drinkRating != null && <span>{'★'.repeat(d.drinkRating as number)}{'☆'.repeat(5 - (d.drinkRating as number))}</span>}
+								</div>
+							</div>
+						)}
+
+						{/* Event */}
+						{kind === 'event' && d.eventStart && (
+							<div class="pk-event-card">
+								<time class="dt-start" datetime={d.eventStart as string}>
+									{new Date(d.eventStart as string).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
+								</time>
+								{d.eventLocation && <span class="p-location">&#x1F4CD; {d.eventLocation as string}</span>}
+							</div>
+						)}
+
+						{/* Review */}
+						{kind === 'review' && d.reviewItemName && (
+							<div class="pk-review-card">
+								<strong>{d.reviewItemName as string}</strong>
+								{d.reviewRating != null && <span>{'★'.repeat(d.reviewRating as number)}{'☆'.repeat((d.reviewBest as number || 5) - (d.reviewRating as number))}</span>}
+							</div>
+						)}
+
+						{/* Mood */}
+						{kind === 'mood' && d.moodLabel && (
+							<div class="pk-mood-display">
+								{d.moodEmoji && <span class="pk-mood__emoji">{d.moodEmoji as string}</span>}
+								<span>{d.moodLabel as string}</span>
+								{d.moodRating != null && <span>{d.moodRating as number}/10</span>}
+							</div>
+						)}
+					</div>
+				)}
 
 				<div class="article-content">
 					<PortableText value={post.data.content} />
@@ -839,6 +1041,205 @@ const publishDate =
 		background: var(--color-surface);
 		padding: var(--tag-padding-y) var(--spacing-2);
 		border-radius: var(--radius);
+	}
+
+	/* Post Kind context block */
+	.post-kind-context {
+		margin-bottom: var(--spacing-8);
+		padding: var(--spacing-6);
+		background: var(--color-bg-subtle);
+		border-radius: var(--radius-lg);
+		border: 1px solid var(--color-border-subtle);
+	}
+
+	.pk-kind-label {
+		display: inline-block;
+		font-size: var(--font-size-xs);
+		font-weight: 600;
+		text-transform: uppercase;
+		letter-spacing: var(--tracking-wide);
+		color: var(--color-accent);
+		margin-bottom: var(--spacing-3);
+	}
+
+	/* Citation block (reply, like, repost, bookmark, rsvp) */
+	.pk-citation {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: baseline;
+		gap: var(--spacing-2);
+		font-size: var(--font-size-lg);
+	}
+
+	.pk-citation__label {
+		font-weight: 500;
+		color: var(--color-text-secondary);
+	}
+
+	.pk-citation a {
+		color: var(--color-accent);
+		text-decoration: underline;
+		text-underline-offset: 3px;
+	}
+
+	.pk-citation__author {
+		color: var(--color-muted);
+		font-size: var(--font-size-sm);
+	}
+
+	/* Quotation block */
+	.pk-quotation {
+		margin: 0;
+		padding: var(--spacing-4) var(--spacing-6);
+		border-left: 3px solid var(--color-accent);
+		font-style: italic;
+		color: var(--color-text-secondary);
+	}
+
+	.pk-quotation cite {
+		display: block;
+		margin-top: var(--spacing-3);
+		font-style: normal;
+		font-size: var(--font-size-sm);
+	}
+
+	.pk-quotation cite a {
+		color: var(--color-accent);
+	}
+
+	/* Media card (listen, watch, read, play, jam) */
+	.pk-media-card {
+		display: flex;
+		gap: var(--spacing-4);
+		align-items: flex-start;
+	}
+
+	.pk-media-card__image {
+		width: 100px;
+		height: 100px;
+		object-fit: cover;
+		border-radius: var(--radius);
+		flex-shrink: 0;
+	}
+
+	.pk-media-card__image--portrait {
+		width: 80px;
+		height: 120px;
+	}
+
+	.pk-media-card__info {
+		display: flex;
+		flex-direction: column;
+		gap: var(--spacing-1);
+	}
+
+	.pk-media-card__info strong {
+		font-size: var(--font-size-lg);
+	}
+
+	.pk-media-card__info span {
+		font-size: var(--font-size-sm);
+		color: var(--color-text-secondary);
+	}
+
+	.pk-media-card__meta {
+		font-style: italic;
+	}
+
+	/* Badge */
+	.pk-badge {
+		display: inline-block;
+		padding: 2px var(--spacing-2);
+		font-size: var(--font-size-xs);
+		font-weight: 500;
+		text-transform: capitalize;
+		background: var(--color-surface);
+		border: 1px solid var(--color-border);
+		border-radius: var(--radius);
+		width: fit-content;
+	}
+
+	/* Location card (checkin) */
+	.pk-location-card {
+		display: flex;
+		gap: var(--spacing-3);
+		align-items: flex-start;
+	}
+
+	.pk-location-card__icon {
+		font-size: var(--font-size-xl);
+	}
+
+	.pk-location-card__address {
+		display: block;
+		font-size: var(--font-size-sm);
+		color: var(--color-text-secondary);
+	}
+
+	/* Lifelog card (eat, drink) */
+	.pk-lifelog-card {
+		display: flex;
+		gap: var(--spacing-4);
+		align-items: flex-start;
+	}
+
+	.pk-lifelog-card__photo {
+		width: 80px;
+		height: 80px;
+		object-fit: cover;
+		border-radius: var(--radius);
+		flex-shrink: 0;
+	}
+
+	.pk-lifelog-card div {
+		display: flex;
+		flex-direction: column;
+		gap: var(--spacing-1);
+	}
+
+	.pk-lifelog-card span {
+		font-size: var(--font-size-sm);
+		color: var(--color-text-secondary);
+	}
+
+	/* Event card */
+	.pk-event-card {
+		display: flex;
+		flex-direction: column;
+		gap: var(--spacing-2);
+	}
+
+	.pk-event-card time {
+		font-size: var(--font-size-lg);
+		font-weight: 500;
+	}
+
+	.pk-event-card .p-location {
+		font-size: var(--font-size-sm);
+		color: var(--color-text-secondary);
+	}
+
+	/* Review card */
+	.pk-review-card {
+		display: flex;
+		align-items: baseline;
+		gap: var(--spacing-3);
+	}
+
+	.pk-review-card strong {
+		font-size: var(--font-size-lg);
+	}
+
+	/* Mood display */
+	.pk-mood-display {
+		display: flex;
+		align-items: center;
+		gap: var(--spacing-3);
+		font-size: var(--font-size-xl);
+	}
+
+	.pk-mood__emoji {
+		font-size: var(--font-size-3xl);
 	}
 
 	/* Comments section */
