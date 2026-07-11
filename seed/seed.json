@@ -8,8 +8,8 @@
 	},
 
 	"settings": {
-		"title": "My Blog",
-		"tagline": "Thoughts on building for the web"
+		"title": "Open Source Together",
+		"tagline": "Building the open web, together"
 	},
 
 	"collections": [
@@ -42,6 +42,97 @@
 					"slug": "excerpt",
 					"label": "Excerpt",
 					"type": "text"
+				},
+				{
+					"slug": "kind",
+					"label": "Post Kind",
+					"type": "select",
+					"defaultValue": "article",
+					"validation": {
+						"options": [
+							"note",
+							"article",
+							"photo",
+							"video",
+							"audio",
+							"reply",
+							"like",
+							"repost",
+							"bookmark",
+							"rsvp",
+							"checkin",
+							"listen",
+							"watch",
+							"read",
+							"play",
+							"eat",
+							"drink",
+							"chat",
+							"event",
+							"review",
+							"recipe",
+							"favorite",
+							"jam",
+							"wish",
+							"mood",
+							"acquisition",
+							"tag-reply",
+							"quotation"
+						]
+					}
+				},
+				{
+					"slug": "in_reply_to",
+					"label": "In Reply To (URL)",
+					"type": "url"
+				},
+				{
+					"slug": "like_of",
+					"label": "Like Of (URL)",
+					"type": "url"
+				},
+				{
+					"slug": "repost_of",
+					"label": "Repost Of (URL)",
+					"type": "url"
+				},
+				{
+					"slug": "bookmark_of",
+					"label": "Bookmark Of (URL)",
+					"type": "url"
+				},
+				{
+					"slug": "quotation_of",
+					"label": "Quotation Of (URL)",
+					"type": "url"
+				},
+				{
+					"slug": "citation_name",
+					"label": "Citation Title",
+					"type": "string"
+				},
+				{
+					"slug": "citation_author",
+					"label": "Citation Author",
+					"type": "string"
+				},
+				{
+					"slug": "rsvp",
+					"label": "RSVP",
+					"type": "select",
+					"validation": {
+						"options": ["yes", "no", "maybe", "interested"]
+					}
+				},
+				{
+					"slug": "kind_meta",
+					"label": "Kind Metadata",
+					"type": "json"
+				},
+				{
+					"slug": "syndication",
+					"label": "Syndication Links",
+					"type": "json"
 				}
 			]
 		},
@@ -63,6 +154,70 @@
 					"label": "Content",
 					"type": "portableText",
 					"searchable": true
+				}
+			]
+		},
+		{
+			"slug": "contacts",
+			"label": "Contacts",
+			"labelSingular": "Contact",
+			"description": "People and sites for the blogroll, with XFN relationships",
+			"supports": ["drafts"],
+			"fields": [
+				{
+					"slug": "title",
+					"label": "Name",
+					"type": "string",
+					"required": true,
+					"searchable": true
+				},
+				{
+					"slug": "url",
+					"label": "Site URL",
+					"type": "url",
+					"required": true
+				},
+				{
+					"slug": "photo",
+					"label": "Photo URL",
+					"type": "url"
+				},
+				{
+					"slug": "feed_url",
+					"label": "Feed URL",
+					"type": "url"
+				},
+				{
+					"slug": "note",
+					"label": "Note",
+					"type": "text"
+				},
+				{
+					"slug": "rel",
+					"label": "XFN Relationships",
+					"type": "multiSelect",
+					"validation": {
+						"options": [
+							"contact",
+							"acquaintance",
+							"friend",
+							"met",
+							"co-worker",
+							"colleague",
+							"co-resident",
+							"neighbor",
+							"child",
+							"parent",
+							"sibling",
+							"spouse",
+							"kin",
+							"muse",
+							"crush",
+							"date",
+							"sweetheart",
+							"me"
+						]
+					}
 				}
 			]
 		}
@@ -117,7 +272,8 @@
 			"items": [
 				{ "type": "custom", "label": "Home", "url": "/" },
 				{ "type": "custom", "label": "About", "url": "/pages/about" },
-				{ "type": "custom", "label": "Posts", "url": "/posts" }
+				{ "type": "custom", "label": "Posts", "url": "/posts" },
+				{ "type": "custom", "label": "Blogroll", "url": "/blogroll" }
 			]
 		}
 	],
@@ -235,6 +391,30 @@
 	],
 
 	"content": {
+		"contacts": [
+			{
+				"id": "contact-indieweb",
+				"slug": "indieweb",
+				"status": "published",
+				"data": {
+					"title": "IndieWeb",
+					"url": "https://indieweb.org/",
+					"note": "The community this site's protocols come from.",
+					"rel": ["contact"]
+				}
+			},
+			{
+				"id": "contact-courtney",
+				"slug": "courtneyr-dev",
+				"status": "published",
+				"data": {
+					"title": "Courtney Robertson",
+					"url": "https://courtneyr.dev/",
+					"note": "This site's author, elsewhere on the web.",
+					"rel": ["me"]
+				}
+			}
+		],
 		"pages": [
 			{
 				"id": "about",
@@ -750,6 +930,59 @@
 				"taxonomies": {
 					"category": ["notes"],
 					"tag": ["opinion"]
+				}
+			},
+			{
+				"id": "post-note-1",
+				"slug": "hello-indieweb",
+				"status": "published",
+				"data": {
+					"title": "Hello IndieWeb",
+					"kind": "note",
+					"excerpt": "A short note posted from my own site.",
+					"content": [
+						{
+							"_type": "block",
+							"style": "normal",
+							"children": [
+								{
+									"_type": "span",
+									"text": "Short thoughts live here now, on my own site first. Syndicated elsewhere when it makes sense."
+								}
+							]
+						}
+					]
+				},
+				"taxonomies": {
+					"category": ["notes"]
+				}
+			},
+			{
+				"id": "post-bookmark-1",
+				"slug": "bookmark-indieweb-org",
+				"status": "published",
+				"data": {
+					"title": "IndieWeb.org",
+					"kind": "bookmark",
+					"bookmark_of": "https://indieweb.org/",
+					"citation_name": "IndieWeb",
+					"excerpt": "The IndieWeb community wiki — the reference for owning your own content.",
+					"content": [
+						{
+							"_type": "block",
+							"style": "normal",
+							"children": [
+								{
+									"_type": "span",
+									"text": "The starting point for all of this: own your data, publish on your own site, syndicate elsewhere."
+								}
+							]
+						}
+					]
+				},
+				"taxonomies": {
+					"category": ["notes"],
+					"tag": ["webdev"]
 				}
 			},
 			{

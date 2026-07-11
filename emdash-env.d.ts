@@ -5,6 +5,23 @@
 
 import type { ContentBylineCredit, TaxonomyTerm, PortableTextBlock } from "emdash";
 
+export interface Contact {
+  id: string;
+  slug: string | null;
+  status: string;
+  title: string;
+  url: string;
+  photo?: string;
+  feed_url?: string;
+  note?: string;
+  rel?: ("contact" | "acquaintance" | "friend" | "met" | "co-worker" | "colleague" | "co-resident" | "neighbor" | "child" | "parent" | "sibling" | "spouse" | "kin" | "muse" | "crush" | "date" | "sweetheart" | "me")[];
+  createdAt: Date;
+  updatedAt: Date;
+  publishedAt: Date | null;
+  bylines?: ContentBylineCredit[];
+  terms?: Record<string, TaxonomyTerm[]>;
+}
+
 export interface Page {
   id: string;
   slug: string | null;
@@ -26,6 +43,17 @@ export interface Post {
   featured_image?: { id: string; src?: string; alt?: string; width?: number; height?: number; provider?: string; previewUrl?: string; meta?: Record<string, unknown> };
   content?: PortableTextBlock[];
   excerpt?: string;
+  kind?: "note" | "article" | "photo" | "video" | "audio" | "reply" | "like" | "repost" | "bookmark" | "rsvp" | "checkin" | "listen" | "watch" | "read" | "play" | "eat" | "drink" | "chat" | "event" | "review" | "recipe" | "favorite" | "jam" | "wish" | "mood" | "acquisition" | "tag-reply" | "quotation";
+  in_reply_to?: string;
+  like_of?: string;
+  repost_of?: string;
+  bookmark_of?: string;
+  quotation_of?: string;
+  citation_name?: string;
+  citation_author?: string;
+  rsvp?: "yes" | "no" | "maybe" | "interested";
+  kind_meta?: unknown;
+  syndication?: unknown;
   createdAt: Date;
   updatedAt: Date;
   publishedAt: Date | null;
@@ -35,6 +63,7 @@ export interface Post {
 
 declare module "emdash" {
   interface EmDashCollections {
+    contacts: Contact;
     pages: Page;
     posts: Post;
   }
