@@ -97,9 +97,9 @@ const publishDate =
 	}) ?? null;
 
 // Post kind metadata
-const kind = (post.data as Record<string, unknown>).kind as string | undefined;
+const d = post.data as unknown as Record<string, unknown>;
+const kind = d.kind as string | undefined;
 const kindDef = kind ? getPostKind(kind) : null;
-const d = post.data as Record<string, unknown>;
 ---
 
 <Base

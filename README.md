@@ -46,16 +46,26 @@ A clean, minimal blog built with [EmDash](https://github.com/emdash-cms/emdash) 
 
 ## Local Development
 
+This project uses **npm** (see `package-lock.json`). It depends on the sibling
+repo `../indieweb-astro` via `file:` links — clone both side by side and build
+the sibling first:
+
 ```bash
-pnpm install
-pnpm bootstrap
-pnpm dev
+# in ../indieweb-astro
+pnpm install && pnpm -r build
+
+# in this repo
+npm install
+npx emdash dev              # runs migrations + type generation, then astro dev
+npx emdash seed seed/seed.json   # seed schema + demo content (first run)
 ```
+
+The admin UI is at `http://localhost:4321/_emdash/admin`.
 
 ## Deploying
 
 ```bash
-pnpm deploy
+npm run deploy   # wrangler deploy (requires wrangler login + D1/R2 setup, see wrangler.jsonc)
 ```
 
 Or click the deploy button above to set up the project in your Cloudflare account.
