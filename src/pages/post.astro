@@ -1,0 +1,429 @@
+---
+/**
+ * /post — quick composer (Outpost-style).
+ *
+ * Mobile-first posting UI gated by the EmDash admin session. Posts go
+ * through the same publish pipeline as Micropub (handleContentCreate),
+ * so kind auto-detection, webmention sending, and POSSE syndication
+ * hooks all run.
+ */
+import { textToPortableText } from "@opensourcetogether/indieweb-core/micropub";
+import { getPostKind } from "@opensourcetogether/indieweb-core/kinds";
+import Base from "../layouts/Base.astro";
+import { callPublicPluginRoute } from "../utils/indieweb";
+
+export const prerender = false;
+
+// Session gate — publishing needs at least the author role (30,
+// matching EmDash's own content:publish_own permission). Subscribers
+// and contributors hold sessions but cannot publish.
+const AUTHOR_ROLE = 30;
+if (!Astro.locals.user) {
+	const loginUrl = new URL("/_emdash/admin/login", Astro.url.origin);
+	loginUrl.searchParams.set("redirect", "/post");
+	return Astro.redirect(loginUrl.toString(), 302);
+}
+if ((Astro.locals.user.role ?? 0) < AUTHOR_ROLE) {
+	return new Response("Forbidden: author role required to publish", {
+		status: 403,
+	});
+}
+
+const COMPOSER_KINDS = [
+	"note",
+	"article",
+	"reply",
+	"like",
+	"repost",
+	"bookmark",
+	"quotation",
+	"rsvp",
+] as const;
+
+const CITATION_FIELD: Record<string, string> = {
+	reply: "in_reply_to",
+	rsvp: "in_reply_to",
+	like: "like_of",
+	repost: "repost_of",
+	bookmark: "bookmark_of",
+	quotation: "quotation_of",
+};
+
+let errorMessage: string | null = null;
+
+if (Astro.request.method === "POST") {
+	const form = new URLSearchParams(await Astro.request.text());
+	const kind = form.get("kind") || "note";
+	const title = form.get("title")?.trim() ?? "";
+	const content = form.get("content")?.trim() ?? "";
+	const citationUrl = form.get("citation_url")?.trim() ?? "";
+	const citationName = form.get("citation_name")?.trim() ?? "";
+	const rsvpValue = form.get("rsvp") ?? "";
+	const status = form.get("status") === "draft" ? "draft" : "published";
+	const syndicateTargets = form.getAll("syndicate_to").filter(Boolean);
+
+	// Citation URLs are rendered into public href attributes — accept
+	// only well-formed http(s) URLs (never javascript: etc.).
+	const isHttpUrl = (value: string): boolean => {
+		try {
+			const url = new URL(value);
+			return url.protocol === "http:" || url.protocol === "https:";
+		} catch {
+			return false;
+		}
+	};
+
+	const needsCitation = kind in CITATION_FIELD;
+	if (!content && !title && !citationUrl) {
+		errorMessage = "Write something first.";
+	} else if (needsCitation && !citationUrl) {
+		errorMessage = `A URL is required for a ${kind} post.`;
+	} else if (citationUrl && !isHttpUrl(citationUrl)) {
+		errorMessage = "The citation URL must be a valid http(s) URL.";
+	} else if (!Astro.locals.emdash?.handleContentCreate) {
+		errorMessage = "EmDash content handlers unavailable — try again.";
+	} else {
+		const fields: Record<string, unknown> = { kind };
+		if (title) fields.title = title;
+		if (content) fields.content = textToPortableText(content);
+		// Title-less posts: archive/stream views render title-or-excerpt,
+		// so derive an excerpt from the body text.
+		if (!title && content) {
+			fields.excerpt =
+				content.length > 180 ? `${content.slice(0, 177)}…` : content;
+		}
+		if (needsCitation && citationUrl) {
+			fields[CITATION_FIELD[kind]] = citationUrl;
+		}
+		if (citationName) fields.citation_name = citationName;
+		if (kind === "rsvp" && rsvpValue) fields.rsvp = rsvpValue;
+		if (syndicateTargets.length > 0) {
+			fields.syndication = { targets: syndicateTargets, links: [] };
+		}
+
+		// Title-less kinds need an explicit slug (the CMS derives slugs
+		// from titles only).
+		let slug: string | undefined;
+		if (!title) {
+			const base =
+				(content || citationUrl)
+					.toLowerCase()
+					.replace(/https?:\/\/\S+/g, "")
+					.replace(/[^a-z0-9\s-]/g, "")
+					.trim()
+					.split(/\s+/)
+					.slice(0, 6)
+					.join("-") || kind;
+			const stamp = new Date()
+				.toISOString()
+				.replace(/[-:T]/g, "")
+				.slice(0, 14);
+			slug = `${base}-${stamp}`;
+		}
+
+		const result = await Astro.locals.emdash.handleContentCreate("posts", {
+			data: fields,
+			...(slug ? { slug } : {}),
+			status,
+			authorId: Astro.locals.user.id,
+			...(status === "published"
+				? { publishedAt: new Date().toISOString() }
+				: {}),
+		});
+
+		if (result.success) {
+			const item = (
+				result.data as { item?: { slug?: string | null; id: string } }
+			)?.item;
+			const target =
+				status === "published"
+					? `/posts/${item?.slug ?? item?.id}`
+					: "/_emdash/admin";
+			return Astro.redirect(target, 303);
+		}
+		const error = (result as { error?: { message?: string } }).error;
+		errorMessage = error?.message ?? "Could not create the post.";
+	}
+}
+
+// Syndication targets for the checkboxes.
+const configResult = await callPublicPluginRoute(Astro, "/micropub-config", {});
+const syndicationTargets = (
+	(configResult.success &&
+		(configResult.data as Record<string, unknown>)?.["syndicate-to"]) ||
+	[]
+) as Array<{ uid: string; name: string }>;
+
+const kindOptions = COMPOSER_KINDS.map((slug) => ({
+	slug,
+	name: getPostKind(slug)?.name ?? slug,
+}));
+---
+
+<Base title="New post" robots="noindex, nofollow">
+	<section class="composer">
+		<h1>New post</h1>
+		{errorMessage && <p class="composer-error" role="alert">{errorMessage}</p>}
+
+		<form method="POST" class="composer-form">
+			<fieldset class="composer-kinds">
+				<legend>Kind</legend>
+				<div class="kind-options">
+					{
+						kindOptions.map((option, index) => (
+							<label class="kind-option">
+								<input
+									type="radio"
+									name="kind"
+									value={option.slug}
+									checked={index === 0}
+								/>
+								<span>{option.name}</span>
+							</label>
+						))
+					}
+				</div>
+			</fieldset>
+
+			<div class="composer-field composer-citation" data-citation-field>
+				<label for="citation_url">URL</label>
+				<input
+					type="url"
+					id="citation_url"
+					name="citation_url"
+					placeholder="https://example.com/the-post-you-are-responding-to"
+				/>
+				<label for="citation_name">Title of that page (optional)</label>
+				<input
+					type="text"
+					id="citation_name"
+					name="citation_name"
+					placeholder="e.g. Their post title"
+				/>
+			</div>
+
+			<div class="composer-field composer-rsvp" data-rsvp-field hidden>
+				<label for="rsvp">RSVP</label>
+				<select id="rsvp" name="rsvp">
+					<option value="yes">Yes — attending</option>
+					<option value="no">No</option>
+					<option value="maybe">Maybe</option>
+					<option value="interested">Interested</option>
+				</select>
+			</div>
+
+			<div class="composer-field" data-title-field hidden>
+				<label for="title">Title</label>
+				<input type="text" id="title" name="title" placeholder="Post title" />
+			</div>
+
+			<div class="composer-field">
+				<label for="content">Content</label>
+				<textarea
+					id="content"
+					name="content"
+					rows="6"
+					placeholder="What's on your mind?"></textarea>
+			</div>
+
+			{
+				syndicationTargets.length > 0 && (
+					<fieldset class="composer-syndication">
+						<legend>Syndicate to</legend>
+						{syndicationTargets.map((target) => (
+							<label class="syndicate-option">
+								<input type="checkbox" name="syndicate_to" value={target.uid} />
+								<span>{target.name}</span>
+							</label>
+						))}
+					</fieldset>
+				)
+			}
+
+			<div class="composer-actions">
+				<button type="submit" name="status" value="published" class="composer-publish">
+					Publish
+				</button>
+				<button type="submit" name="status" value="draft" class="composer-draft">
+					Save draft
+				</button>
+			</div>
+		</form>
+	</section>
+</Base>
+
+<script>
+	// Show/hide fields based on the selected kind.
+	const CITATION_KINDS = new Set([
+		"reply",
+		"like",
+		"repost",
+		"bookmark",
+		"quotation",
+		"rsvp",
+	]);
+	const TITLE_KINDS = new Set(["article"]);
+
+	const form = document.querySelector(".composer-form");
+	const citationField = document.querySelector(
+		"[data-citation-field]"
+	) as HTMLElement | null;
+	const rsvpField = document.querySelector(
+		"[data-rsvp-field]"
+	) as HTMLElement | null;
+	const titleField = document.querySelector(
+		"[data-title-field]"
+	) as HTMLElement | null;
+
+	function updateVisibility() {
+		const kind =
+			(
+				document.querySelector(
+					'input[name="kind"]:checked'
+				) as HTMLInputElement | null
+			)?.value ?? "note";
+		if (citationField) citationField.hidden = !CITATION_KINDS.has(kind);
+		if (rsvpField) rsvpField.hidden = kind !== "rsvp";
+		if (titleField) titleField.hidden = !TITLE_KINDS.has(kind);
+	}
+
+	form?.addEventListener("change", (event) => {
+		if ((event.target as HTMLInputElement)?.name === "kind") {
+			updateVisibility();
+		}
+	});
+	updateVisibility();
+</script>
+
+<style>
+	.composer {
+		max-width: 560px;
+		margin: var(--spacing-12) auto;
+		padding: 0 var(--spacing-4);
+	}
+
+	.composer h1 {
+		font-size: var(--font-size-2xl);
+		margin-bottom: var(--spacing-6);
+	}
+
+	.composer-error {
+		padding: var(--spacing-3) var(--spacing-4);
+		border: 1px solid #b3261e;
+		border-radius: var(--radius);
+		color: #b3261e;
+		margin-bottom: var(--spacing-6);
+		font-size: var(--font-size-sm);
+	}
+
+	.composer-form {
+		display: flex;
+		flex-direction: column;
+		gap: var(--spacing-6);
+	}
+
+	fieldset {
+		border: 1px solid var(--color-border);
+		border-radius: var(--radius);
+		padding: var(--spacing-4);
+	}
+
+	legend {
+		font-size: var(--font-size-xs);
+		text-transform: uppercase;
+		letter-spacing: var(--tracking-wide);
+		color: var(--color-muted);
+		padding: 0 var(--spacing-2);
+	}
+
+	.kind-options {
+		display: flex;
+		flex-wrap: wrap;
+		gap: var(--spacing-2);
+	}
+
+	.kind-option {
+		display: inline-flex;
+		align-items: center;
+		gap: var(--spacing-1);
+		padding: var(--spacing-1) var(--spacing-3);
+		border: 1px solid var(--color-border);
+		border-radius: 999px;
+		font-size: var(--font-size-sm);
+		cursor: pointer;
+	}
+
+	.kind-option:has(input:checked) {
+		border-color: var(--color-accent);
+		background: var(--color-accent-ring);
+	}
+
+	.kind-option input {
+		accent-color: var(--color-accent);
+	}
+
+	.composer-field {
+		display: flex;
+		flex-direction: column;
+		gap: var(--spacing-2);
+	}
+
+	.composer-field label {
+		font-size: var(--font-size-sm);
+		font-weight: 500;
+	}
+
+	.composer-field input,
+	.composer-field textarea,
+	.composer-field select {
+		padding: var(--spacing-3);
+		border: 1px solid var(--color-border);
+		border-radius: var(--radius);
+		background: var(--color-bg);
+		color: var(--color-text);
+		font-family: var(--font-sans);
+		font-size: var(--font-size-base);
+	}
+
+	.composer-field textarea {
+		resize: vertical;
+		min-height: 120px;
+	}
+
+	.syndicate-option {
+		display: flex;
+		align-items: center;
+		gap: var(--spacing-2);
+		margin: var(--spacing-2) 0;
+		font-size: var(--font-size-sm);
+	}
+
+	.composer-actions {
+		display: flex;
+		gap: var(--spacing-4);
+	}
+
+	.composer-publish {
+		padding: var(--spacing-3) var(--spacing-8);
+		background: var(--color-accent);
+		color: var(--color-on-accent);
+		border: none;
+		border-radius: var(--radius);
+		font-size: var(--font-size-base);
+		font-weight: 600;
+		cursor: pointer;
+	}
+
+	.composer-publish:hover {
+		background: var(--color-accent-hover);
+	}
+
+	.composer-draft {
+		padding: var(--spacing-3) var(--spacing-6);
+		background: transparent;
+		color: var(--color-text-secondary);
+		border: 1px solid var(--color-border);
+		border-radius: var(--radius);
+		cursor: pointer;
+	}
+</style>

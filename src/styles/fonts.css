@@ -1,0 +1,52 @@
+/*
+  Self-hosted fonts for the courtneyr.dev design system port.
+  Files live in public/fonts (latin subsets, woff2 only).
+  font-display: swap keeps text visible during load (spec.website / CWV).
+*/
+
+@font-face {
+	font-family: "Barlow";
+	font-style: normal;
+	font-weight: 400;
+	font-display: swap;
+	src: url("/fonts/barlow-400.woff2") format("woff2");
+}
+@font-face {
+	font-family: "Barlow";
+	font-style: normal;
+	font-weight: 500;
+	font-display: swap;
+	src: url("/fonts/barlow-500.woff2") format("woff2");
+}
+@font-face {
+	font-family: "Barlow";
+	font-style: normal;
+	font-weight: 600;
+	font-display: swap;
+	src: url("/fonts/barlow-600.woff2") format("woff2");
+}
+@font-face {
+	font-family: "Barlow";
+	font-style: normal;
+	font-weight: 700;
+	font-display: swap;
+	src: url("/fonts/barlow-700.woff2") format("woff2");
+}
+
+/* Variable font — one file covers weights 100–900. */
+@font-face {
+	font-family: "Roboto Slab";
+	font-style: normal;
+	font-weight: 100 900;
+	font-display: swap;
+	src: url("/fonts/roboto-slab-var.woff2") format("woff2");
+}
+
+/* Display only — wordmark and short hero headings. */
+@font-face {
+	font-family: "Rock Salt";
+	font-style: normal;
+	font-weight: 400;
+	font-display: swap;
+	src: url("/fonts/rock-salt-400.woff2") format("woff2");
+}

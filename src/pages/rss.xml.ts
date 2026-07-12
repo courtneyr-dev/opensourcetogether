@@ -1,8 +1,9 @@
 import type { APIRoute } from "astro";
 import { getEmDashCollection } from "emdash";
 
-const siteTitle = "My Blog";
-const siteDescription = "A blog about software, design, and the occasional stray thought.";
+const siteTitle = "Open Source Together";
+const siteDescription =
+	"Open source, IndieWeb, and community — published here first, syndicated everywhere else.";
 
 export const GET: APIRoute = async ({ site, url }) => {
 	const siteUrl = site?.toString() || url.origin;

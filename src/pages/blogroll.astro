@@ -1,0 +1,163 @@
+---
+/**
+ * Blogroll — the contacts collection rendered as an h-feed of h-cards
+ * with XFN rel attributes on each outbound link.
+ *
+ * @see https://indieweb.org/blogroll
+ * @see https://gmpg.org/xfn/
+ */
+import { getEmDashCollection } from "emdash";
+import { buildRelAttribute } from "@opensourcetogether/indieweb-core/xfn";
+import Base from "../layouts/Base.astro";
+
+export const prerender = false;
+
+const { entries: contacts, cacheHint } = await getEmDashCollection("contacts", {
+	orderBy: { title: "asc" },
+});
+Astro.cache.set(cacheHint);
+
+interface ContactView {
+	name: string;
+	url: string;
+	photo?: string;
+	feedUrl?: string;
+	note?: string;
+	rel: string;
+}
+
+const items: ContactView[] = contacts
+	.map((entry) => {
+		const data = entry.data as unknown as Record<string, unknown>;
+		const xfn = Array.isArray(data.rel)
+			? data.rel.filter((v): v is string => typeof v === "string")
+			: [];
+		return {
+			name: (data.title as string) ?? "",
+			url: (data.url as string) ?? "",
+			photo: (data.photo as string) || undefined,
+			feedUrl: (data.feed_url as string) || undefined,
+			note: (data.note as string) || undefined,
+			rel: buildRelAttribute(xfn, ["noopener"]),
+		};
+	})
+	.filter((c) => c.name && c.url);
+---
+
+<Base
+	title="Blogroll"
+	description="People and sites I follow — with XFN relationship annotations."
+>
+	<section class="blogroll h-feed">
+		<header class="blogroll-header">
+			<h1 class="p-name">Blogroll</h1>
+			<p class="blogroll-intro">
+				People and sites I follow. Each link carries an
+				<a href="https://gmpg.org/xfn/">XFN</a> relationship annotation.
+			</p>
+		</header>
+
+		{
+			items.length === 0 ? (
+				<p class="blogroll-empty">No contacts yet — check back soon.</p>
+			) : (
+				<ul class="blogroll-list">
+					{items.map((contact) => (
+						<li class="blogroll-item h-card">
+							{contact.photo && (
+								<img
+									class="u-photo blogroll-photo"
+									src={contact.photo}
+									alt=""
+									loading="lazy"
+									width="48"
+									height="48"
+								/>
+							)}
+							<div class="blogroll-body">
+								<a
+									class="p-name u-url blogroll-name"
+									href={contact.url}
+									rel={contact.rel}
+								>
+									{contact.name}
+								</a>
+								{contact.note && (
+									<p class="p-note blogroll-note">{contact.note}</p>
+								)}
+								{contact.feedUrl && (
+									<a class="blogroll-feed" href={contact.feedUrl} rel="feed">
+										Feed
+									</a>
+								)}
+							</div>
+						</li>
+					))}
+				</ul>
+			)
+		}
+	</section>
+</Base>
+
+<style>
+	.blogroll {
+		max-width: var(--content-width);
+		margin: var(--spacing-16) auto;
+		padding: 0 var(--spacing-6);
+	}
+
+	.blogroll-header h1 {
+		font-size: var(--font-size-3xl);
+		margin-bottom: var(--spacing-3);
+	}
+
+	.blogroll-intro {
+		color: var(--color-text-secondary);
+		margin-bottom: var(--spacing-10);
+	}
+
+	.blogroll-empty {
+		color: var(--color-muted);
+	}
+
+	.blogroll-list {
+		list-style: none;
+		display: flex;
+		flex-direction: column;
+		gap: var(--spacing-6);
+	}
+
+	.blogroll-item {
+		display: flex;
+		gap: var(--spacing-4);
+		align-items: flex-start;
+		padding-bottom: var(--spacing-6);
+		border-bottom: 1px solid var(--color-border-subtle);
+	}
+
+	.blogroll-photo {
+		border-radius: 50%;
+		width: 48px;
+		height: 48px;
+		object-fit: cover;
+	}
+
+	.blogroll-name {
+		font-weight: 600;
+		font-size: var(--font-size-lg);
+	}
+
+	.blogroll-note {
+		margin-top: var(--spacing-1);
+		color: var(--color-text-secondary);
+		font-size: var(--font-size-sm);
+	}
+
+	.blogroll-feed {
+		display: inline-block;
+		margin-top: var(--spacing-2);
+		font-size: var(--font-size-xs);
+		text-transform: uppercase;
+		letter-spacing: var(--tracking-wide);
+	}
+</style>

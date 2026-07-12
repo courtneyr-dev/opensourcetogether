@@ -3,10 +3,14 @@ import Base from "../layouts/Base.astro";
 ---
 
 <Base title="Page not found">
-	<div class="not-found">
-		<h1>404</h1>
-		<p>The page you're looking for doesn't exist.</p>
-		<a href="/">Go back home</a>
+	<div class="not-found cr-halftone">
+		<span class="cr-tape">Lost in the margins</span>
+		<h1 class="cr-display">404</h1>
+		<p>The page you're looking for doesn't exist — or it moved without leaving a forwarding address.</p>
+		<div class="not-found-actions">
+			<a href="/" class="cr-cta">Go back home</a>
+			<a href="/posts" class="cr-button">Browse all posts</a>
+		</div>
 	</div>
 </Base>
 
@@ -17,17 +21,20 @@ import Base from "../layouts/Base.astro";
 	}
 
 	.not-found h1 {
-		font-size: var(--font-size-5xl);
-		margin-bottom: var(--spacing-2);
-		color: var(--color-border);
+		font-size: clamp(4rem, 12vw, 8rem);
+		margin: var(--spacing-4) 0 var(--spacing-2);
 	}
 
 	.not-found p {
-		color: var(--color-muted);
-		margin-bottom: var(--spacing-6);
+		color: var(--cr-ink-muted);
+		max-width: 34rem;
+		margin: 0 auto var(--spacing-8);
 	}
 
-	.not-found a {
-		color: var(--color-text);
+	.not-found-actions {
+		display: flex;
+		gap: var(--spacing-4);
+		justify-content: center;
+		flex-wrap: wrap;
 	}
 </style>

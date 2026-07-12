@@ -96,10 +96,84 @@ const publishDate =
 		day: "numeric",
 	}) ?? null;
 
-// Post kind metadata
-const kind = (post.data as Record<string, unknown>).kind as string | undefined;
+// Post kind metadata.
+// Schema fields are snake_case; lifelog enrichment lives in the kind_meta
+// JSON field. Merge both into one camelCase-keyed view for the template.
+const raw = post.data as unknown as Record<string, unknown>;
+const kindMeta = (
+	raw.kind_meta && typeof raw.kind_meta === "object" ? raw.kind_meta : {}
+) as Record<string, unknown>;
+
+// Defense in depth: citation values render into href attributes, so
+// drop anything that is not a well-formed http(s) URL — even though
+// the composer and Micropub mapping validate on the way in.
+function safeHttpUrl(value: unknown): string | undefined {
+	if (typeof value !== "string") return undefined;
+	try {
+		const url = new URL(value);
+		return url.protocol === "http:" || url.protocol === "https:"
+			? value
+			: undefined;
+	} catch {
+		return undefined;
+	}
+}
+
+const d: Record<string, unknown> = {
+	...kindMeta,
+	inReplyTo: safeHttpUrl(raw.in_reply_to),
+	likeOf: safeHttpUrl(raw.like_of),
+	repostOf: safeHttpUrl(raw.repost_of),
+	bookmarkOf: safeHttpUrl(raw.bookmark_of),
+	quotationOf: safeHttpUrl(raw.quotation_of),
+	citationName: raw.citation_name,
+	citationAuthor: raw.citation_author,
+	rsvp: raw.rsvp,
+};
+const kind = raw.kind as string | undefined;
 const kindDef = kind ? getPostKind(kind) : null;
-const d = post.data as Record<string, unknown>;
+
+// Syndication state: pending Bridgy targets (rendered as invisible
+// anchors so Bridgy accepts the publish webmention) and completed links
+// (rendered as u-syndication).
+const syndication = (
+	raw.syndication && typeof raw.syndication === "object"
+		? raw.syndication
+		: {}
+) as {
+	targets?: string[];
+	links?: Array<{ url: string; targetUid?: string }>;
+};
+const pendingSyndicationTargets = (
+	Array.isArray(syndication.targets) ? syndication.targets : []
+).filter((t) => safeHttpUrl(t) !== undefined);
+const syndicationLinks = Array.isArray(syndication.links)
+	? syndication.links.filter(
+			(l) => l && safeHttpUrl(l.url) !== undefined,
+		)
+	: [];
+
+function syndicationLabel(url: string): string {
+	try {
+		return new URL(url).hostname.replace(/^www\./, "");
+	} catch {
+		return url;
+	}
+}
+
+const canonicalUrl = `${Astro.url.origin}/posts/${slug}`;
+const siteAuthor = { name: "Courtney Robertson", url: "https://courtneyr.dev" };
+
+// Title-less kinds (notes, likes, ...) store an empty title. The page
+// still needs a non-empty h1 (axe: empty-heading); derive one from the
+// kind and date. It is NOT marked p-name — for notes the content is the
+// implied name per microformats2.
+const hasTitle = Boolean(post.data.title);
+const publishedDateLabel = post.data.publishedAt?.toLocaleDateString(
+	"en-US",
+	{ year: "numeric", month: "long", day: "numeric" },
+);
+const fallbackHeading = `${kindDef?.name ?? "Post"}${publishedDateLabel ? ` — ${publishedDateLabel}` : ""}`;
 ---
 
 <Base
@@ -113,7 +187,7 @@ const d = post.data as Record<string, unknown>;
 	modifiedTime={post.data.updatedAt.toISOString()}
 	content={{ collection: "posts", id: post.data.id, slug }}
 >
-	<article class="article">
+	<article class="article h-entry">
 		{/* Hero: Full-width featured image */}
 		{
 			post.data.featured_image && (
@@ -209,19 +283,39 @@ const d = post.data as Record<string, unknown>;
 						{
 							publishDate && (
 								<>
-									<time>{publishDate}</time>
+									<time
+										class="dt-published"
+										datetime={post.data.publishedAt?.toISOString()}
+									>
+										{publishDate}
+									</time>
 									<span class="meta-dot" />
 								</>
 							)
 						}
 						<span>{readingTime} min read</span>
 					</div>
-					<h1 class="article-title" {...post.edit.title}>{post.data.title}</h1>
 					{
-						post.data.excerpt && (
-							<p class="article-excerpt">{post.data.excerpt}</p>
+						hasTitle ? (
+							<h1 class="article-title p-name" {...post.edit.title}>
+								{post.data.title}
+							</h1>
+						) : (
+							<h1 class="article-title article-title--fallback">
+								{fallbackHeading}
+							</h1>
 						)
 					}
+					{
+						post.data.excerpt && (
+							<p class="article-excerpt p-summary">{post.data.excerpt}</p>
+						)
+					}
+					{/* Machine-readable h-entry metadata */}
+					<a class="u-url" href={canonicalUrl} hidden>Permalink</a>
+					<span class="p-author h-card" hidden>
+						<a class="p-name u-url" href={siteAuthor.url}>{siteAuthor.name}</a>
+					</span>
 				</header>
 
 				{/* Kind-specific metadata */}
@@ -420,11 +514,33 @@ const d = post.data as Record<string, unknown>;
 					</div>
 				)}
 
-				<div class="article-content">
+				<div class="article-content e-content cr-prose">
 					<PortableText value={post.data.content} />
 				</div>
 
+				{/* Syndicated copies (POSSE) */}
+				{
+					syndicationLinks.length > 0 && (
+						<div class="article-syndication">
+							<span class="syndication-label">Also on:</span>
+							{syndicationLinks.map((link) => (
+								<a class="u-syndication" href={link.url} rel="syndication">
+									{syndicationLabel(link.url)}
+								</a>
+							))}
+						</div>
+					)
+				}
+				{/* Pending Bridgy publish targets: Bridgy requires the source
+				    page to link to the publish target. Invisible by design. */}
+				{pendingSyndicationTargets.map((target) => (
+					<a href={target} hidden aria-hidden="true"></a>
+				))}
+
 				<div class="article-comments">
+					{/* Comments renders its own h3 — this h2 keeps heading
+					    order intact (h1 → h2 → h3) */}
+					<h2 class="comments-section-title">Responses</h2>
 					<Comments collection="posts" contentId={post.data.id} threaded />
 					<CommentForm collection="posts" contentId={post.data.id} />
 				</div>
@@ -688,10 +804,16 @@ const d = post.data as Record<string, unknown>;
 
 	.article-title {
 		font-size: clamp(2rem, 5vw, var(--font-size-5xl));
-		font-weight: 700;
+		font-weight: var(--cr-weight-black);
 		line-height: var(--leading-tight);
-		letter-spacing: var(--tracking-tight);
+		letter-spacing: var(--cr-tracking-tight);
 		margin-bottom: var(--spacing-4);
+	}
+
+	/* Derived heading for title-less kinds — quieter than a real title */
+	.article-title--fallback {
+		font-size: clamp(1.5rem, 3vw, var(--font-size-3xl));
+		color: var(--color-text-secondary);
 	}
 
 	.article-excerpt {
@@ -897,9 +1019,12 @@ const d = post.data as Record<string, unknown>;
 
 	.sidebar-widgets :global(.widget-search__input):focus,
 	.sidebar-widgets :global(.widget-search__input):focus-visible {
-		outline: none;
+		/* Match the site-wide two-layer focus indicator (yellow ring +
+		   ink ring) instead of the old accent-only glow. */
+		outline: 3px solid var(--cr-focus-ring);
+		outline-offset: 2px;
 		border-color: var(--color-accent);
-		box-shadow: 0 0 0 3px var(--color-accent-ring);
+		box-shadow: 0 0 0 2px var(--cr-ink);
 	}
 
 	.sidebar-widgets :global(.widget-search__button) {
@@ -1043,22 +1168,27 @@ const d = post.data as Record<string, unknown>;
 		border-radius: var(--radius);
 	}
 
-	/* Post Kind context block */
+	/* Post Kind context block — zine accent card */
 	.post-kind-context {
 		margin-bottom: var(--spacing-8);
 		padding: var(--spacing-6);
-		background: var(--color-bg-subtle);
-		border-radius: var(--radius-lg);
-		border: 1px solid var(--color-border-subtle);
+		background: var(--cr-surface-elevated);
+		border: var(--cr-border-thick);
+		box-shadow: var(--cr-shadow-hard);
 	}
 
+	/* Kind label — masking-tape chip voice */
 	.pk-kind-label {
 		display: inline-block;
+		font-family: var(--cr-font-accent);
 		font-size: var(--font-size-xs);
-		font-weight: 600;
+		font-weight: var(--cr-weight-bold);
 		text-transform: uppercase;
-		letter-spacing: var(--tracking-wide);
-		color: var(--color-accent);
+		letter-spacing: var(--cr-tracking-eyebrow);
+		background: var(--cr-tape);
+		color: var(--cr-tape-ink);
+		padding: var(--cr-space-3xs) var(--cr-space-sm);
+		transform: rotate(var(--cr-rotate-1));
 		margin-bottom: var(--spacing-3);
 	}
 
@@ -1243,10 +1373,40 @@ const d = post.data as Record<string, unknown>;
 	}
 
 	/* Comments section */
+	.article-syndication {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: var(--spacing-2);
+		margin-top: var(--spacing-8);
+		font-size: var(--font-size-sm);
+	}
+
+	.syndication-label {
+		color: var(--color-muted);
+	}
+
+	.article-syndication .u-syndication {
+		padding: var(--tag-padding-y) var(--spacing-3);
+		border: 1px solid var(--color-border);
+		border-radius: var(--radius);
+		color: var(--color-text-secondary);
+	}
+
 	.article-comments {
 		margin-top: var(--spacing-16);
 		padding-top: var(--spacing-10);
-		border-top: 1px solid var(--color-border);
+		border-top: 4px solid var(--cr-marker);
+	}
+
+	.comments-section-title {
+		font-family: var(--cr-font-accent);
+		font-size: var(--font-size-sm);
+		font-weight: var(--cr-weight-bold);
+		text-transform: uppercase;
+		letter-spacing: var(--cr-tracking-eyebrow);
+		color: var(--cr-marker-text);
+		margin-bottom: var(--spacing-4);
 	}
 
 	.article-comments :global(.ec-comments) {
