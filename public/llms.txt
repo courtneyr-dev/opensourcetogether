@@ -1,0 +1,16 @@
+# Open Source Together
+
+> Personal site of Courtney Robertson: open source, IndieWeb, and community.
+> Posts are published here first and syndicated elsewhere (POSSE).
+
+## Content
+
+- [All posts](https://opensourcetogether.dev/posts): every post kind — articles, notes, bookmarks, replies, and more — newest first
+- [Blogroll](https://opensourcetogether.dev/blogroll): people and sites I follow, with XFN relationship metadata
+- [RSS feed](https://opensourcetogether.dev/rss.xml): the 20 most recent posts
+
+## Machine-readable surfaces
+
+- [Sitemap](https://opensourcetogether.dev/sitemap.xml)
+- Posts are marked up as microformats2 h-entry; the blogroll is an h-feed of h-cards
+- IndieWeb endpoints: /webmention (Webmention), /micropub (Micropub), /indieauth/metadata (IndieAuth server metadata)

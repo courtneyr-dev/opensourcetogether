@@ -91,7 +91,7 @@ const formatDate = (date: Date) =>
 								) : (
 									<p class="stream-note p-name">
 										<a class="u-url stream-note-link" href={`/posts/${post.id}`}>
-											{post.data.excerpt ?? "Untitled"}
+											{post.data.excerpt || `${kindFormat.label} from ${post.data.publishedAt?.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }) ?? "the stream"}`}
 										</a>
 									</p>
 								)}

@@ -6,18 +6,21 @@
 		"description": "A blog with posts and pages",
 		"author": "EmDash"
 	},
-
 	"settings": {
 		"title": "Open Source Together",
 		"tagline": "Building the open web, together"
 	},
-
 	"collections": [
 		{
 			"slug": "posts",
 			"label": "Posts",
 			"labelSingular": "Post",
-			"supports": ["drafts", "revisions", "search", "seo"],
+			"supports": [
+				"drafts",
+				"revisions",
+				"search",
+				"seo"
+			],
 			"commentsEnabled": true,
 			"fields": [
 				{
@@ -120,7 +123,12 @@
 					"label": "RSVP",
 					"type": "select",
 					"validation": {
-						"options": ["yes", "no", "maybe", "interested"]
+						"options": [
+							"yes",
+							"no",
+							"maybe",
+							"interested"
+						]
 					}
 				},
 				{
@@ -139,7 +147,11 @@
 			"slug": "pages",
 			"label": "Pages",
 			"labelSingular": "Page",
-			"supports": ["drafts", "revisions", "search"],
+			"supports": [
+				"drafts",
+				"revisions",
+				"search"
+			],
 			"fields": [
 				{
 					"slug": "title",
@@ -161,7 +173,9 @@
 			"label": "Contacts",
 			"labelSingular": "Contact",
 			"description": "People and sites for the blogroll, with XFN relationships",
-			"supports": ["drafts"],
+			"supports": [
+				"drafts"
+			],
 			"fields": [
 				{
 					"slug": "title",
@@ -221,18 +235,28 @@
 			]
 		}
 	],
-
 	"taxonomies": [
 		{
 			"name": "category",
 			"label": "Categories",
 			"labelSingular": "Category",
 			"hierarchical": true,
-			"collections": ["posts"],
+			"collections": [
+				"posts"
+			],
 			"terms": [
-				{ "slug": "development", "label": "Development" },
-				{ "slug": "design", "label": "Design" },
-				{ "slug": "notes", "label": "Notes" }
+				{
+					"slug": "development",
+					"label": "Development"
+				},
+				{
+					"slug": "design",
+					"label": "Design"
+				},
+				{
+					"slug": "notes",
+					"label": "Notes"
+				}
 			]
 		},
 		{
@@ -240,16 +264,29 @@
 			"label": "Tags",
 			"labelSingular": "Tag",
 			"hierarchical": false,
-			"collections": ["posts"],
+			"collections": [
+				"posts"
+			],
 			"terms": [
-				{ "slug": "webdev", "label": "Web Development" },
-				{ "slug": "opinion", "label": "Opinion" },
-				{ "slug": "tools", "label": "Tools" },
-				{ "slug": "creativity", "label": "Creativity" }
+				{
+					"slug": "webdev",
+					"label": "Web Development"
+				},
+				{
+					"slug": "opinion",
+					"label": "Opinion"
+				},
+				{
+					"slug": "tools",
+					"label": "Tools"
+				},
+				{
+					"slug": "creativity",
+					"label": "Creativity"
+				}
 			]
 		}
 	],
-
 	"bylines": [
 		{
 			"id": "byline-editorial",
@@ -263,20 +300,34 @@
 			"isGuest": true
 		}
 	],
-
 	"menus": [
 		{
 			"name": "primary",
 			"label": "Primary Navigation",
 			"items": [
-				{ "type": "custom", "label": "Home", "url": "/" },
-				{ "type": "custom", "label": "About", "url": "/pages/about" },
-				{ "type": "custom", "label": "Posts", "url": "/posts" },
-				{ "type": "custom", "label": "Blogroll", "url": "/blogroll" }
+				{
+					"type": "custom",
+					"label": "Home",
+					"url": "/"
+				},
+				{
+					"type": "custom",
+					"label": "About",
+					"url": "/pages/about"
+				},
+				{
+					"type": "custom",
+					"label": "Posts",
+					"url": "/posts"
+				},
+				{
+					"type": "custom",
+					"label": "Blogroll",
+					"url": "/blogroll"
+				}
 			]
 		}
 	],
-
 	"widgetAreas": [
 		{
 			"name": "sidebar",
@@ -342,19 +393,28 @@
 			]
 		}
 	],
-
 	"sections": [
 		{
 			"slug": "newsletter-signup",
 			"title": "Newsletter Signup",
 			"description": "A call-to-action block for newsletter subscriptions",
-			"keywords": ["newsletter", "subscribe", "email", "cta"],
+			"keywords": [
+				"newsletter",
+				"subscribe",
+				"email",
+				"cta"
+			],
 			"source": "theme",
 			"content": [
 				{
 					"_type": "block",
 					"style": "h3",
-					"children": [{ "_type": "span", "text": "Stay in the loop" }]
+					"children": [
+						{
+							"_type": "span",
+							"text": "Stay in the loop"
+						}
+					]
 				},
 				{
 					"_type": "block",
@@ -372,7 +432,11 @@
 			"slug": "about-author",
 			"title": "About the Author",
 			"description": "Brief author bio for use in posts or pages",
-			"keywords": ["author", "bio", "about"],
+			"keywords": [
+				"author",
+				"bio",
+				"about"
+			],
 			"source": "theme",
 			"content": [
 				{
@@ -388,7 +452,6 @@
 			]
 		}
 	],
-
 	"content": {
 		"contacts": [
 			{
@@ -399,7 +462,9 @@
 					"title": "IndieWeb",
 					"url": "https://indieweb.org/",
 					"note": "The community this site's protocols come from.",
-					"rel": ["contact"]
+					"rel": [
+						"contact"
+					]
 				}
 			},
 			{
@@ -410,7 +475,9 @@
 					"title": "Courtney Robertson",
 					"url": "https://courtneyr.dev/",
 					"note": "This site's author, elsewhere on the web.",
-					"rel": ["me"]
+					"rel": [
+						"me"
+					]
 				}
 			}
 		],
@@ -439,6 +506,66 @@
 								{
 									"_type": "span",
 									"text": "Built with Astro and EmDash. The source is open if you want to see how it works."
+								}
+							]
+						}
+					]
+				}
+			},
+			{
+				"id": "privacy",
+				"slug": "privacy",
+				"status": "published",
+				"data": {
+					"title": "Privacy",
+					"content": [
+						{
+							"_type": "block",
+							"style": "normal",
+							"children": [
+								{
+									"_type": "span",
+									"text": "This site collects as little as possible. There are no advertising trackers, no third-party analytics scripts, and no fingerprinting."
+								}
+							]
+						},
+						{
+							"_type": "block",
+							"style": "normal",
+							"children": [
+								{
+									"_type": "span",
+									"text": "Fonts and all other assets are self-hosted, so page views are not shared with any CDN or font provider."
+								}
+							]
+						},
+						{
+							"_type": "block",
+							"style": "normal",
+							"children": [
+								{
+									"_type": "span",
+									"text": "If you send a webmention, the source and target URLs you submit are stored so the mention can be verified and displayed. If you comment, the name and text you provide are stored with the post."
+								}
+							]
+						},
+						{
+							"_type": "block",
+							"style": "normal",
+							"children": [
+								{
+									"_type": "span",
+									"text": "The site runs on Cloudflare Workers; Cloudflare processes requests as the hosting provider and may log requests for operational purposes. A theme preference cookie (light/dark) is stored in your browser if you pick one — it never leaves your machine except as part of ordinary requests to this site."
+								}
+							]
+						},
+						{
+							"_type": "block",
+							"style": "normal",
+							"children": [
+								{
+									"_type": "span",
+									"text": "Questions? Contact the site owner via the links in the footer."
 								}
 							]
 						}
@@ -485,7 +612,12 @@
 						{
 							"_type": "block",
 							"style": "h2",
-							"children": [{ "_type": "span", "text": "What survives" }]
+							"children": [
+								{
+									"_type": "span",
+									"text": "What survives"
+								}
+							]
 						},
 						{
 							"_type": "block",
@@ -520,12 +652,21 @@
 					]
 				},
 				"bylines": [
-					{ "byline": "byline-editorial" },
-					{ "byline": "byline-guest", "roleLabel": "Guest essay" }
+					{
+						"byline": "byline-editorial"
+					},
+					{
+						"byline": "byline-guest",
+						"roleLabel": "Guest essay"
+					}
 				],
 				"taxonomies": {
-					"category": ["development"],
-					"tag": ["opinion"]
+					"category": [
+						"development"
+					],
+					"tag": [
+						"opinion"
+					]
 				}
 			},
 			{
@@ -566,7 +707,12 @@
 						{
 							"_type": "block",
 							"style": "h2",
-							"children": [{ "_type": "span", "text": "The performance argument" }]
+							"children": [
+								{
+									"_type": "span",
+									"text": "The performance argument"
+								}
+							]
 						},
 						{
 							"_type": "block",
@@ -590,10 +736,19 @@
 						}
 					]
 				},
-				"bylines": [{ "byline": "byline-editorial" }],
+				"bylines": [
+					{
+						"byline": "byline-editorial"
+					}
+				],
 				"taxonomies": {
-					"category": ["development"],
-					"tag": ["webdev", "opinion"]
+					"category": [
+						"development"
+					],
+					"tag": [
+						"webdev",
+						"opinion"
+					]
 				}
 			},
 			{
@@ -634,7 +789,12 @@
 						{
 							"_type": "block",
 							"style": "h2",
-							"children": [{ "_type": "span", "text": "The fear of being wrong" }]
+							"children": [
+								{
+									"_type": "span",
+									"text": "The fear of being wrong"
+								}
+							]
 						},
 						{
 							"_type": "block",
@@ -659,8 +819,12 @@
 					]
 				},
 				"taxonomies": {
-					"category": ["notes"],
-					"tag": ["opinion"]
+					"category": [
+						"notes"
+					],
+					"tag": [
+						"opinion"
+					]
 				}
 			},
 			{
@@ -701,7 +865,12 @@
 						{
 							"_type": "block",
 							"style": "h2",
-							"children": [{ "_type": "span", "text": "The Unix philosophy, revisited" }]
+							"children": [
+								{
+									"_type": "span",
+									"text": "The Unix philosophy, revisited"
+								}
+							]
 						},
 						{
 							"_type": "block",
@@ -726,8 +895,12 @@
 					]
 				},
 				"taxonomies": {
-					"category": ["development"],
-					"tag": ["tools"]
+					"category": [
+						"development"
+					],
+					"tag": [
+						"tools"
+					]
 				}
 			},
 			{
@@ -768,7 +941,12 @@
 						{
 							"_type": "block",
 							"style": "h2",
-							"children": [{ "_type": "span", "text": "Embracing the box" }]
+							"children": [
+								{
+									"_type": "span",
+									"text": "Embracing the box"
+								}
+							]
 						},
 						{
 							"_type": "block",
@@ -793,8 +971,12 @@
 					]
 				},
 				"taxonomies": {
-					"category": ["design"],
-					"tag": ["creativity"]
+					"category": [
+						"design"
+					],
+					"tag": [
+						"creativity"
+					]
 				}
 			},
 			{
@@ -835,7 +1017,12 @@
 						{
 							"_type": "block",
 							"style": "h2",
-							"children": [{ "_type": "span", "text": "Why side projects matter" }]
+							"children": [
+								{
+									"_type": "span",
+									"text": "Why side projects matter"
+								}
+							]
 						},
 						{
 							"_type": "block",
@@ -860,8 +1047,12 @@
 					]
 				},
 				"taxonomies": {
-					"category": ["development"],
-					"tag": ["creativity"]
+					"category": [
+						"development"
+					],
+					"tag": [
+						"creativity"
+					]
 				}
 			},
 			{
@@ -902,7 +1093,12 @@
 						{
 							"_type": "block",
 							"style": "h2",
-							"children": [{ "_type": "span", "text": "Removing as a feature" }]
+							"children": [
+								{
+									"_type": "span",
+									"text": "Removing as a feature"
+								}
+							]
 						},
 						{
 							"_type": "block",
@@ -927,8 +1123,12 @@
 					]
 				},
 				"taxonomies": {
-					"category": ["notes"],
-					"tag": ["opinion"]
+					"category": [
+						"notes"
+					],
+					"tag": [
+						"opinion"
+					]
 				}
 			},
 			{
@@ -953,7 +1153,9 @@
 					]
 				},
 				"taxonomies": {
-					"category": ["notes"]
+					"category": [
+						"notes"
+					]
 				}
 			},
 			{
@@ -980,8 +1182,12 @@
 					]
 				},
 				"taxonomies": {
-					"category": ["notes"],
-					"tag": ["webdev"]
+					"category": [
+						"notes"
+					],
+					"tag": [
+						"webdev"
+					]
 				}
 			},
 			{

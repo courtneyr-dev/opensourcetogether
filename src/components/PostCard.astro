@@ -32,6 +32,11 @@ const {
 const kindFormat = getKindFormat(kind);
 const showChip = kind && kind !== "article";
 
+// Title-less kinds store an empty-string title; fall back to the excerpt
+// so the card heading is never empty (axe: empty-heading).
+const displayTitle = title || excerpt || "Untitled";
+const showExcerptLine = Boolean(title && excerpt);
+
 const formattedDate = date
 	? date.toLocaleDateString("en-US", {
 			year: "numeric",
@@ -104,8 +109,8 @@ const formattedDate = date
 				{formattedDate && readingTime && <span class="meta-dot" />}
 				{readingTime && <span>{readingTime} min</span>}
 			</div>
-			<h2 class="card-title">{title ?? (excerpt || "Untitled")}</h2>
-			{title && excerpt && <p class="card-excerpt">{excerpt}</p>}
+			<h2 class="card-title">{displayTitle}</h2>
+			{showExcerptLine && <p class="card-excerpt">{excerpt}</p>}
 		</div>
 	</a>
 	{

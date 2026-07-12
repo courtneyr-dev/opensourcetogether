@@ -145,6 +145,17 @@ function syndicationLabel(url: string): string {
 
 const canonicalUrl = `${Astro.url.origin}/posts/${slug}`;
 const siteAuthor = { name: "Courtney Robertson", url: "https://courtneyr.dev" };
+
+// Title-less kinds (notes, likes, ...) store an empty title. The page
+// still needs a non-empty h1 (axe: empty-heading); derive one from the
+// kind and date. It is NOT marked p-name — for notes the content is the
+// implied name per microformats2.
+const hasTitle = Boolean(post.data.title);
+const publishedDateLabel = post.data.publishedAt?.toLocaleDateString(
+	"en-US",
+	{ year: "numeric", month: "long", day: "numeric" },
+);
+const fallbackHeading = `${kindDef?.name ?? "Post"}${publishedDateLabel ? ` — ${publishedDateLabel}` : ""}`;
 ---
 
 <Base
@@ -266,7 +277,17 @@ const siteAuthor = { name: "Courtney Robertson", url: "https://courtneyr.dev" };
 						}
 						<span>{readingTime} min read</span>
 					</div>
-					<h1 class="article-title p-name" {...post.edit.title}>{post.data.title}</h1>
+					{
+						hasTitle ? (
+							<h1 class="article-title p-name" {...post.edit.title}>
+								{post.data.title}
+							</h1>
+						) : (
+							<h1 class="article-title article-title--fallback">
+								{fallbackHeading}
+							</h1>
+						)
+					}
 					{
 						post.data.excerpt && (
 							<p class="article-excerpt p-summary">{post.data.excerpt}</p>
@@ -499,6 +520,9 @@ const siteAuthor = { name: "Courtney Robertson", url: "https://courtneyr.dev" };
 				))}
 
 				<div class="article-comments">
+					{/* Comments renders its own h3 — this h2 keeps heading
+					    order intact (h1 → h2 → h3) */}
+					<h2 class="comments-section-title">Responses</h2>
 					<Comments collection="posts" contentId={post.data.id} threaded />
 					<CommentForm collection="posts" contentId={post.data.id} />
 				</div>
@@ -766,6 +790,12 @@ const siteAuthor = { name: "Courtney Robertson", url: "https://courtneyr.dev" };
 		line-height: var(--leading-tight);
 		letter-spacing: var(--cr-tracking-tight);
 		margin-bottom: var(--spacing-4);
+	}
+
+	/* Derived heading for title-less kinds — quieter than a real title */
+	.article-title--fallback {
+		font-size: clamp(1.5rem, 3vw, var(--font-size-3xl));
+		color: var(--color-text-secondary);
 	}
 
 	.article-excerpt {
@@ -1345,7 +1375,17 @@ const siteAuthor = { name: "Courtney Robertson", url: "https://courtneyr.dev" };
 	.article-comments {
 		margin-top: var(--spacing-16);
 		padding-top: var(--spacing-10);
-		border-top: 1px solid var(--color-border);
+		border-top: 4px solid var(--cr-marker);
+	}
+
+	.comments-section-title {
+		font-family: var(--cr-font-accent);
+		font-size: var(--font-size-sm);
+		font-weight: var(--cr-weight-bold);
+		text-transform: uppercase;
+		letter-spacing: var(--cr-tracking-eyebrow);
+		color: var(--cr-marker);
+		margin-bottom: var(--spacing-4);
 	}
 
 	.article-comments :global(.ec-comments) {
