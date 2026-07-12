@@ -475,7 +475,7 @@ const siteAuthor = { name: "Courtney Robertson", url: "https://courtneyr.dev" };
 					</div>
 				)}
 
-				<div class="article-content e-content">
+				<div class="article-content e-content cr-prose">
 					<PortableText value={post.data.content} />
 				</div>
 
@@ -762,9 +762,9 @@ const siteAuthor = { name: "Courtney Robertson", url: "https://courtneyr.dev" };
 
 	.article-title {
 		font-size: clamp(2rem, 5vw, var(--font-size-5xl));
-		font-weight: 700;
+		font-weight: var(--cr-weight-black);
 		line-height: var(--leading-tight);
-		letter-spacing: var(--tracking-tight);
+		letter-spacing: var(--cr-tracking-tight);
 		margin-bottom: var(--spacing-4);
 	}
 
@@ -1117,22 +1117,27 @@ const siteAuthor = { name: "Courtney Robertson", url: "https://courtneyr.dev" };
 		border-radius: var(--radius);
 	}
 
-	/* Post Kind context block */
+	/* Post Kind context block — zine accent card */
 	.post-kind-context {
 		margin-bottom: var(--spacing-8);
 		padding: var(--spacing-6);
-		background: var(--color-bg-subtle);
-		border-radius: var(--radius-lg);
-		border: 1px solid var(--color-border-subtle);
+		background: var(--cr-surface-elevated);
+		border: var(--cr-border-thick);
+		box-shadow: var(--cr-shadow-hard);
 	}
 
+	/* Kind label — masking-tape chip voice */
 	.pk-kind-label {
 		display: inline-block;
+		font-family: var(--cr-font-accent);
 		font-size: var(--font-size-xs);
-		font-weight: 600;
+		font-weight: var(--cr-weight-bold);
 		text-transform: uppercase;
-		letter-spacing: var(--tracking-wide);
-		color: var(--color-accent);
+		letter-spacing: var(--cr-tracking-eyebrow);
+		background: var(--cr-tape);
+		color: var(--cr-tape-ink);
+		padding: var(--cr-space-3xs) var(--cr-space-sm);
+		transform: rotate(var(--cr-rotate-1));
 		margin-bottom: var(--spacing-3);
 	}
 

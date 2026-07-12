@@ -1,6 +1,7 @@
 ---
 import type { MediaValue, ContentBylineCredit } from "emdash";
 import { Image } from "emdash/ui";
+import { getKindFormat } from "../utils/kind-format";
 
 interface Props {
 	/** Absent for title-less kinds (notes, likes, ...). */
@@ -12,6 +13,8 @@ interface Props {
 	readingTime?: number;
 	tags?: Array<{ slug: string; label: string }>;
 	bylines?: ContentBylineCredit[];
+	/** IndieWeb post kind — drives the design-system chip accent. */
+	kind?: string;
 }
 
 const {
@@ -23,7 +26,11 @@ const {
 	readingTime,
 	tags,
 	bylines,
+	kind,
 } = Astro.props;
+
+const kindFormat = getKindFormat(kind);
+const showChip = kind && kind !== "article";
 
 const formattedDate = date
 	? date.toLocaleDateString("en-US", {
@@ -46,6 +53,13 @@ const formattedDate = date
 			)
 		}
 		<div class="card-body">
+			{
+				showChip && (
+					<span class={`cr-chip cr-chip--${kindFormat.chipType} card-chip`}>
+						{kindFormat.label}
+					</span>
+				)
+			}
 			<div class="card-meta">
 				{
 					bylines && bylines.length > 0 && (
@@ -90,7 +104,7 @@ const formattedDate = date
 				{formattedDate && readingTime && <span class="meta-dot" />}
 				{readingTime && <span>{readingTime} min</span>}
 			</div>
-			<h2 class="card-title">{title ?? excerpt ?? "Untitled"}</h2>
+			<h2 class="card-title">{title ?? (excerpt || "Untitled")}</h2>
 			{title && excerpt && <p class="card-excerpt">{excerpt}</p>}
 		</div>
 	</a>
@@ -108,9 +122,20 @@ const formattedDate = date
 </article>
 
 <style>
+	/* Zine card — elevated surface, thick border, hard offset shadow.
+	   Cards stay upright (content); the kind chip carries the rotation. */
 	.post-card {
 		display: flex;
 		flex-direction: column;
+		background: var(--cr-surface-elevated);
+		border: var(--cr-border-thick);
+		box-shadow: var(--cr-shadow-hard);
+		padding: var(--spacing-4);
+		transition: transform var(--cr-motion-fast) var(--cr-ease-out);
+	}
+
+	.post-card:hover {
+		transform: translate(-2px, -2px);
 	}
 
 	.card-link {
@@ -119,11 +144,16 @@ const formattedDate = date
 		color: inherit;
 	}
 
+	.card-chip {
+		align-self: flex-start;
+		margin-bottom: var(--spacing-3);
+	}
+
 	.card-image {
 		aspect-ratio: 16 / 10;
 		overflow: hidden;
 		border-radius: var(--radius-lg);
-		background: var(--color-surface);
+		background: var(--cr-surface-soft);
 		margin-bottom: var(--spacing-4);
 	}
 
@@ -141,7 +171,9 @@ const formattedDate = date
 	.card-placeholder {
 		aspect-ratio: 16 / 10;
 		border-radius: var(--radius-lg);
-		background: var(--color-surface);
+		background: var(--cr-surface-soft);
+		background-image: var(--cr-halftone);
+		background-size: var(--cr-halftone-size);
 		margin-bottom: var(--spacing-4);
 	}
 
@@ -173,16 +205,16 @@ const formattedDate = date
 	}
 
 	.card-title {
+		font-family: var(--cr-font-accent);
 		font-size: var(--font-size-xl);
-		font-weight: 600;
+		font-weight: var(--cr-weight-bold);
 		line-height: var(--leading-snug);
-		letter-spacing: var(--tracking-snug);
 		margin-bottom: var(--spacing-2);
 		transition: color var(--transition-fast);
 	}
 
 	.card-link:hover .card-title {
-		color: var(--color-accent);
+		color: var(--cr-link);
 	}
 
 	.card-excerpt {
@@ -202,22 +234,22 @@ const formattedDate = date
 		margin-top: var(--spacing-3);
 	}
 
+	/* Tags — masking-tape labels */
 	.card-tag {
 		display: inline-block;
 		padding: var(--tag-padding-y) var(--spacing-2);
+		font-family: var(--cr-font-accent);
 		font-size: var(--font-size-xs);
-		color: var(--color-muted);
-		background: var(--color-surface);
-		border-radius: var(--radius);
+		font-weight: var(--cr-weight-bold);
+		color: var(--cr-tape-ink);
+		background: var(--cr-tape);
 		text-decoration: none;
-		transition:
-			color var(--transition-fast),
-			background var(--transition-fast);
+		transition: background var(--transition-fast);
 	}
 
 	.card-tag:hover {
-		color: var(--color-text);
-		background: var(--color-border);
+		background: var(--cr-highlight);
+		color: var(--cr-prussian-blue);
 	}
 
 	/* Byline styles */
