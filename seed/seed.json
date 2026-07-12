@@ -24,7 +24,6 @@
 					"slug": "title",
 					"label": "Title",
 					"type": "string",
-					"required": true,
 					"searchable": true
 				},
 				{

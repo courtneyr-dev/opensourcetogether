@@ -96,10 +96,55 @@ const publishDate =
 		day: "numeric",
 	}) ?? null;
 
-// Post kind metadata
-const d = post.data as unknown as Record<string, unknown>;
-const kind = d.kind as string | undefined;
+// Post kind metadata.
+// Schema fields are snake_case; lifelog enrichment lives in the kind_meta
+// JSON field. Merge both into one camelCase-keyed view for the template.
+const raw = post.data as unknown as Record<string, unknown>;
+const kindMeta = (
+	raw.kind_meta && typeof raw.kind_meta === "object" ? raw.kind_meta : {}
+) as Record<string, unknown>;
+const d: Record<string, unknown> = {
+	...kindMeta,
+	inReplyTo: raw.in_reply_to,
+	likeOf: raw.like_of,
+	repostOf: raw.repost_of,
+	bookmarkOf: raw.bookmark_of,
+	quotationOf: raw.quotation_of,
+	citationName: raw.citation_name,
+	citationAuthor: raw.citation_author,
+	rsvp: raw.rsvp,
+};
+const kind = raw.kind as string | undefined;
 const kindDef = kind ? getPostKind(kind) : null;
+
+// Syndication state: pending Bridgy targets (rendered as invisible
+// anchors so Bridgy accepts the publish webmention) and completed links
+// (rendered as u-syndication).
+const syndication = (
+	raw.syndication && typeof raw.syndication === "object"
+		? raw.syndication
+		: {}
+) as {
+	targets?: string[];
+	links?: Array<{ url: string; targetUid?: string }>;
+};
+const pendingSyndicationTargets = Array.isArray(syndication.targets)
+	? syndication.targets
+	: [];
+const syndicationLinks = Array.isArray(syndication.links)
+	? syndication.links.filter((l) => l && typeof l.url === "string")
+	: [];
+
+function syndicationLabel(url: string): string {
+	try {
+		return new URL(url).hostname.replace(/^www\./, "");
+	} catch {
+		return url;
+	}
+}
+
+const canonicalUrl = `${Astro.url.origin}/posts/${slug}`;
+const siteAuthor = { name: "Courtney Robertson", url: "https://courtneyr.dev" };
 ---
 
 <Base
@@ -113,7 +158,7 @@ const kindDef = kind ? getPostKind(kind) : null;
 	modifiedTime={post.data.updatedAt.toISOString()}
 	content={{ collection: "posts", id: post.data.id, slug }}
 >
-	<article class="article">
+	<article class="article h-entry">
 		{/* Hero: Full-width featured image */}
 		{
 			post.data.featured_image && (
@@ -209,19 +254,29 @@ const kindDef = kind ? getPostKind(kind) : null;
 						{
 							publishDate && (
 								<>
-									<time>{publishDate}</time>
+									<time
+										class="dt-published"
+										datetime={post.data.publishedAt?.toISOString()}
+									>
+										{publishDate}
+									</time>
 									<span class="meta-dot" />
 								</>
 							)
 						}
 						<span>{readingTime} min read</span>
 					</div>
-					<h1 class="article-title" {...post.edit.title}>{post.data.title}</h1>
+					<h1 class="article-title p-name" {...post.edit.title}>{post.data.title}</h1>
 					{
 						post.data.excerpt && (
-							<p class="article-excerpt">{post.data.excerpt}</p>
+							<p class="article-excerpt p-summary">{post.data.excerpt}</p>
 						)
 					}
+					{/* Machine-readable h-entry metadata */}
+					<a class="u-url" href={canonicalUrl} hidden>Permalink</a>
+					<span class="p-author h-card" hidden>
+						<a class="p-name u-url" href={siteAuthor.url}>{siteAuthor.name}</a>
+					</span>
 				</header>
 
 				{/* Kind-specific metadata */}
@@ -420,9 +475,28 @@ const kindDef = kind ? getPostKind(kind) : null;
 					</div>
 				)}
 
-				<div class="article-content">
+				<div class="article-content e-content">
 					<PortableText value={post.data.content} />
 				</div>
+
+				{/* Syndicated copies (POSSE) */}
+				{
+					syndicationLinks.length > 0 && (
+						<div class="article-syndication">
+							<span class="syndication-label">Also on:</span>
+							{syndicationLinks.map((link) => (
+								<a class="u-syndication" href={link.url} rel="syndication">
+									{syndicationLabel(link.url)}
+								</a>
+							))}
+						</div>
+					)
+				}
+				{/* Pending Bridgy publish targets: Bridgy requires the source
+				    page to link to the publish target. Invisible by design. */}
+				{pendingSyndicationTargets.map((target) => (
+					<a href={target} hidden aria-hidden="true"></a>
+				))}
 
 				<div class="article-comments">
 					<Comments collection="posts" contentId={post.data.id} threaded />
@@ -1243,6 +1317,26 @@ const kindDef = kind ? getPostKind(kind) : null;
 	}
 
 	/* Comments section */
+	.article-syndication {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: var(--spacing-2);
+		margin-top: var(--spacing-8);
+		font-size: var(--font-size-sm);
+	}
+
+	.syndication-label {
+		color: var(--color-muted);
+	}
+
+	.article-syndication .u-syndication {
+		padding: var(--tag-padding-y) var(--spacing-3);
+		border: 1px solid var(--color-border);
+		border-radius: var(--radius);
+		color: var(--color-text-secondary);
+	}
+
 	.article-comments {
 		margin-top: var(--spacing-16);
 		padding-top: var(--spacing-10);

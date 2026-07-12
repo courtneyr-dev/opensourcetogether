@@ -91,6 +91,12 @@ const isLoggedIn = !!Astro.locals.user;
 			twitter={{ site: '@courtneyr_dev', creator: '@courtneyr_dev' }}
 			article={type === 'article' ? { publishedTime: publishedTime ? new Date(publishedTime) : undefined, tags: [] } : undefined}
 		/>
+		{/* IndieWeb endpoint discovery */}
+		<link rel="webmention" href={`${Astro.url.origin}/webmention`} />
+		<link rel="micropub" href={`${Astro.url.origin}/micropub`} />
+		<link rel="indieauth-metadata" href={`${Astro.url.origin}/indieauth/metadata`} />
+		<link rel="authorization_endpoint" href={`${Astro.url.origin}/indieauth/authorize`} />
+		<link rel="token_endpoint" href={`${Astro.url.origin}/indieauth/token`} />
 		<EmDashHead page={pageCtx} />
 		<script is:inline>
 			// Apply theme immediately to prevent flash
