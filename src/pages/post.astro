@@ -14,11 +14,19 @@ import { callPublicPluginRoute } from "../utils/indieweb";
 
 export const prerender = false;
 
-// Session gate — composer is for the site owner.
+// Session gate — publishing needs at least the author role (30,
+// matching EmDash's own content:publish_own permission). Subscribers
+// and contributors hold sessions but cannot publish.
+const AUTHOR_ROLE = 30;
 if (!Astro.locals.user) {
 	const loginUrl = new URL("/_emdash/admin/login", Astro.url.origin);
 	loginUrl.searchParams.set("redirect", "/post");
 	return Astro.redirect(loginUrl.toString(), 302);
+}
+if ((Astro.locals.user.role ?? 0) < AUTHOR_ROLE) {
+	return new Response("Forbidden: author role required to publish", {
+		status: 403,
+	});
 }
 
 const COMPOSER_KINDS = [

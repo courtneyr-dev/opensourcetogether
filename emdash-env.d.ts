@@ -39,7 +39,7 @@ export interface Post {
   id: string;
   slug: string | null;
   status: string;
-  title: string;
+  title?: string;
   featured_image?: { id: string; src?: string; alt?: string; width?: number; height?: number; provider?: string; previewUrl?: string; meta?: Record<string, unknown> };
   content?: PortableTextBlock[];
   excerpt?: string;

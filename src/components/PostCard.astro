@@ -3,7 +3,8 @@ import type { MediaValue, ContentBylineCredit } from "emdash";
 import { Image } from "emdash/ui";
 
 interface Props {
-	title: string;
+	/** Absent for title-less kinds (notes, likes, ...). */
+	title?: string;
 	excerpt?: string;
 	featuredImage?: MediaValue | string;
 	href: string;
@@ -89,8 +90,8 @@ const formattedDate = date
 				{formattedDate && readingTime && <span class="meta-dot" />}
 				{readingTime && <span>{readingTime} min</span>}
 			</div>
-			<h2 class="card-title">{title}</h2>
-			{excerpt && <p class="card-excerpt">{excerpt}</p>}
+			<h2 class="card-title">{title ?? excerpt ?? "Untitled"}</h2>
+			{title && excerpt && <p class="card-excerpt">{excerpt}</p>}
 		</div>
 	</a>
 	{

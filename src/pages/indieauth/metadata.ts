@@ -17,9 +17,12 @@ export const GET: APIRoute = async ({ url }) => {
 		token_endpoint: `${origin}/indieauth/token`,
 		revocation_endpoint: `${origin}/indieauth/token`,
 		revocation_endpoint_auth_methods_supported: ["none"],
-		scopes_supported: ["create", "update", "delete", "media", "profile"],
+		// Only implemented scopes: Micropub supports create only, and
+		// profile-only flows carry no scope.
+		scopes_supported: ["create", "profile"],
 		response_types_supported: ["code"],
 		grant_types_supported: ["authorization_code"],
 		code_challenge_methods_supported: ["S256"],
+		authorization_response_iss_parameter_supported: true,
 	});
 };

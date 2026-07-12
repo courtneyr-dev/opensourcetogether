@@ -30,6 +30,12 @@ export const prerender = false;
 
 const me = `${Astro.url.origin}/`;
 
+// The `me` URL issued here is the site's canonical identity, so only
+// an administrator may approve requests (EmDash role 50). Lower roles
+// can hold CMS sessions but must not mint codes that speak for the site.
+const ADMIN_ROLE = 50;
+const isSiteOwner = (Astro.locals.user?.role ?? 0) >= ADMIN_ROLE;
+
 if (Astro.request.method === "POST") {
 	const form = new URLSearchParams(await Astro.request.text());
 
@@ -57,6 +63,11 @@ if (Astro.request.method === "POST") {
 	if (!Astro.locals.user) {
 		return new Response("Unauthorized", { status: 401 });
 	}
+	if (!isSiteOwner) {
+		return new Response("Forbidden: administrator role required", {
+			status: 403,
+		});
+	}
 	const validated = validateAuthorizationRequest({
 		response_type: "code",
 		client_id: form.get("client_id") ?? undefined,
@@ -68,6 +79,19 @@ if (Astro.request.method === "POST") {
 	});
 	if (isAuthorizationServerError(validated)) {
 		return jsonResponse(validated, 400);
+	}
+
+	// Denial: send the client the OAuth error response instead of a code.
+	if (form.get("action") === "deny") {
+		const denied = new URL(validated.redirectUri);
+		denied.searchParams.set("error", "access_denied");
+		denied.searchParams.set(
+			"error_description",
+			"The user denied the authorization request",
+		);
+		denied.searchParams.set("state", validated.state);
+		denied.searchParams.set("iss", me);
+		return Astro.redirect(denied.toString(), 302);
 	}
 
 	// Only scopes the admin left checked are granted.
@@ -114,6 +138,12 @@ if (!requestError && !Astro.locals.user) {
 		Astro.url.pathname + Astro.url.search,
 	);
 	return Astro.redirect(loginUrl.toString(), 302);
+}
+
+if (!requestError && !isSiteOwner) {
+	return new Response("Forbidden: administrator role required", {
+		status: 403,
+	});
 }
 
 if (requestError) {
@@ -202,9 +232,14 @@ const scopeDescriptions: Record<string, string> = {
 						<button type="submit" class="consent-approve">
 							Approve
 						</button>
-						<a href="/" class="consent-deny">
-							Cancel
-						</a>
+						<button
+							type="submit"
+							name="action"
+							value="deny"
+							class="consent-deny"
+						>
+							Deny
+						</button>
 					</div>
 					<p class="consent-meta">
 						Signed in as {Astro.locals.user?.email ?? "admin"}. You will be
@@ -282,7 +317,13 @@ const scopeDescriptions: Record<string, string> = {
 	}
 
 	.consent-deny {
+		padding: var(--spacing-2) var(--spacing-6);
+		background: transparent;
 		color: var(--color-text-secondary);
+		border: 1px solid var(--color-border);
+		border-radius: var(--radius);
+		font-size: var(--font-size-base);
+		cursor: pointer;
 	}
 
 	.consent-meta {

@@ -41,7 +41,6 @@ export const POST: APIRoute = async (context) => {
 	const result = await callPublicPluginRoute(context, "/webmention", {
 		source,
 		target,
-		origin: context.url.origin,
 	});
 
 	if (!result.success) {
@@ -66,7 +65,6 @@ export const GET: APIRoute = async (context) => {
 	const result = await callPublicPluginRoute(context, "/webmention", {
 		op: "list",
 		target,
-		origin: context.url.origin,
 	});
 
 	if (!result.success) {

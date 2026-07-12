@@ -55,7 +55,7 @@ async function verifyToken(
 	});
 	if (!result.success) {
 		return oauthErrorResponse(
-			"unauthorized",
+			"invalid_token",
 			result.error?.message ?? "Token verification failed",
 			401,
 		);
@@ -64,7 +64,7 @@ async function verifyToken(
 	if (!verification.active) {
 		const insufficientScope = verification.error?.includes("scope");
 		return oauthErrorResponse(
-			insufficientScope ? "insufficient_scope" : "unauthorized",
+			insufficientScope ? "insufficient_scope" : "invalid_token",
 			verification.error ?? "invalid token",
 			insufficientScope ? 403 : 401,
 		);
@@ -108,9 +108,75 @@ export const GET: APIRoute = async (context) => {
 };
 
 export const POST: APIRoute = async (context) => {
+	// Buffer the raw body so it can be parsed here AND forwarded intact
+	// if the request needs to be rewritten for handler escalation.
+	const contentType = context.request.headers.get("content-type") ?? "";
+	const rawBody = await context.request.arrayBuffer();
+
+	let body: unknown;
+	let formParams: URLSearchParams | undefined;
+	let parseContentType = contentType;
+
+	if (contentType.includes("application/json")) {
+		try {
+			body = JSON.parse(new TextDecoder().decode(rawBody));
+		} catch {
+			return oauthErrorResponse("invalid_request", "Invalid JSON body", 400);
+		}
+	} else if (contentType.includes("application/x-www-form-urlencoded")) {
+		const raw = new TextDecoder().decode(rawBody);
+		formParams = new URLSearchParams(raw);
+		body = raw;
+	} else if (contentType.includes("multipart/form-data")) {
+		// Multipart create (required of servers without a media
+		// endpoint). File parts are rejected — media uploads are not
+		// supported; string parts map onto the form-encoded shape.
+		let formData: FormData;
+		try {
+			formData = await new Request(context.request.url, {
+				method: "POST",
+				headers: { "content-type": contentType },
+				body: rawBody,
+			}).formData();
+		} catch {
+			return oauthErrorResponse(
+				"invalid_request",
+				"Invalid multipart body",
+				400,
+			);
+		}
+		formParams = new URLSearchParams();
+		for (const [key, value] of formData.entries()) {
+			if (typeof value !== "string") {
+				return oauthErrorResponse(
+					"invalid_request",
+					"File uploads are not supported (no media endpoint)",
+					400,
+				);
+			}
+			formParams.append(key, value);
+		}
+		body = formParams.toString();
+		parseContentType = "application/x-www-form-urlencoded";
+	} else {
+		return oauthErrorResponse(
+			"invalid_request",
+			`Unsupported content type: ${contentType || "(none)"}`,
+			415,
+		);
+	}
+
+	// Authorization first: no privileged escalation happens for callers
+	// without a valid `create`-scoped token. Token verification only
+	// needs the public plugin surface, which every request has.
+	const token = extractBearer(context.request, formParams);
+	const verification = await verifyToken(context, token, "create");
+	if (verification instanceof Response) return verification;
+
 	// Publishing needs the full EmDash surface. If this request came in
 	// anonymously (limited surface), rewrite once with the escalation
-	// marker so the middleware initializes the full handlers.
+	// marker so the middleware initializes the full handlers. The
+	// bearer token is re-verified on the escalated pass.
 	if (!context.locals.emdash?.handleContentCreate) {
 		if (context.request.headers.get(INTERNAL_HEADER) === "1") {
 			return oauthErrorResponse(
@@ -121,37 +187,17 @@ export const POST: APIRoute = async (context) => {
 		}
 		const target = new URL(context.request.url);
 		target.searchParams.set(ESCALATION_PARAM, "1");
-		const escalated = new Request(target, context.request);
-		escalated.headers.set(INTERNAL_HEADER, "1");
+		const headers = new Headers(context.request.headers);
+		headers.set(INTERNAL_HEADER, "1");
+		const escalated = new Request(target, {
+			method: "POST",
+			headers,
+			body: rawBody,
+		});
 		return context.rewrite(escalated);
 	}
 
-	const contentType = context.request.headers.get("content-type") ?? "";
-	let body: unknown;
-	let formParams: URLSearchParams | undefined;
-
-	if (contentType.includes("application/json")) {
-		body = await context.request.json().catch(() => null);
-		if (!body) {
-			return oauthErrorResponse("invalid_request", "Invalid JSON body", 400);
-		}
-	} else if (contentType.includes("application/x-www-form-urlencoded")) {
-		const raw = await context.request.text();
-		formParams = new URLSearchParams(raw);
-		body = raw;
-	} else {
-		return oauthErrorResponse(
-			"invalid_request",
-			`Unsupported content type: ${contentType || "(none)"}`,
-			415,
-		);
-	}
-
-	const token = extractBearer(context.request, formParams);
-	const verification = await verifyToken(context, token, "create");
-	if (verification instanceof Response) return verification;
-
-	const parsed = parseMicropubRequest(body, contentType);
+	const parsed = parseMicropubRequest(body, parseContentType);
 	if ("error" in parsed) {
 		return oauthErrorResponse(
 			parsed.error,
