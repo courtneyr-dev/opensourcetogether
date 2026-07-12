@@ -89,8 +89,7 @@ const isLoggedIn = !!Astro.locals.user;
 			crossorigin
 		/>
 		<Seo
-			title={title}
-			titleTemplate={`%s — ${siteTitle}`}
+			title={fullTitle}
 			description={description ?? undefined}
 			ogType={type === 'article' ? 'article' : 'website'}
 			ogImage={image ?? undefined}
