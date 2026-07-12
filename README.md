@@ -1,50 +1,44 @@
-# EmDash Blog Template (Cloudflare)
+# Open Source Together
 
-A clean, minimal blog built with [EmDash](https://github.com/emdash-cms/emdash) and deployed on Cloudflare Workers with D1 and R2.
+The personal IndieWeb site behind [opensourcetogether.dev](https://opensourcetogether.dev) — built with [EmDash](https://github.com/emdash-cms/emdash) on Cloudflare Workers (D1 + R2), with a full POSSE publishing stack provided by the sibling [`indieweb-astro`](../indieweb-astro) monorepo.
 
-[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/emdash-cms/templates/tree/main/blog-cloudflare)
+## What this site does
 
-![Blog template homepage](https://raw.githubusercontent.com/emdash-cms/emdash/main/assets/templates/blog/latest/homepage-light-desktop.jpg)
+**Publishing**
+- 28 IndieWeb post kinds (article, note, reply, like, repost, bookmark, photo, listen, watch, read, checkin, …) with kind auto-detection and per-kind rendering
+- `/post` composer — mobile-friendly authoring UI gated by EmDash session auth (author role+)
+- Micropub endpoint (`/micropub`) so external clients (Quill, Indigenous, …) can post here
+- IndieAuth server (`/indieauth/authorize`, `/indieauth/token`, metadata at `/indieauth/metadata` and `/.well-known/oauth-authorization-server`) backing Micropub token issuance — PKCE (S256) required
+- POSSE via [Bridgy](https://brid.gy): published posts are syndicated to configured silos by webmention, and returned syndication URLs render as `u-syndication` links
 
-## What's Included
+**Conversation**
+- Webmentions: receiving (`/webmention`, with verification), sending (on publish, to every linked URL), and moderation in the admin
+- h-entry / h-card microformats2 markup on posts and the homepage
+- XFN relationships + `/blogroll` (an h-feed of contacts from the admin's Relationships data)
 
-- Featured post hero on the homepage
-- Post archive with reading time estimates
-- Category and tag archives
-- Full-text search
-- RSS feed
-- SEO metadata and JSON-LD
-- Dark/light mode
-- Forms plugin and webhook notifier
+**Quality**
+- courtneyr.dev design system (zine-style tokens, components, self-hosted Barlow / Roboto Slab / Rock Salt)
+- Automated axe accessibility scan (`npm run a11y`) — green on all key routes
+- Yoast-style content analysis (Flesch readability + keyphrase checks) via the `content-analysis` admin page
+- SEO: canonical URLs, Open Graph, JSON-LD (astro-seo-graph), `sitemap.xml`, `robots.txt`, `llms.txt`, `.well-known/security.txt`
 
-## Pages
+## Routes
 
-| Page | Route |
+| Route | Purpose |
 |---|---|
-| Homepage | `/` |
-| All posts | `/posts` |
-| Single post | `/posts/:slug` |
-| Category archive | `/category/:slug` |
-| Tag archive | `/tag/:slug` |
-| Search | `/search` |
-| Static pages | `/pages/:slug` |
-| 404 | fallback |
+| `/` | Homepage — hero + featured post + recent stream |
+| `/posts`, `/posts/:slug` | Archive and single posts (h-entry) |
+| `/category/:slug`, `/tag/:slug` | Taxonomy archives |
+| `/search` | Full-text search |
+| `/pages/:slug` | Static pages (about, privacy) |
+| `/blogroll` | XFN blogroll (h-feed of h-cards) |
+| `/post` | Session-gated post composer |
+| `/webmention` | Webmention receiver (POST) and list (GET) |
+| `/micropub` | Micropub endpoint (config/syndicate-to queries + create) |
+| `/indieauth/authorize`, `/indieauth/token` | IndieAuth server |
+| `/rss.xml`, `/sitemap.xml` | Feeds |
 
-## Screenshots
-
-| | Desktop | Mobile |
-|---|---|---|
-| Light | ![homepage light desktop](https://raw.githubusercontent.com/emdash-cms/emdash/main/assets/templates/blog/latest/homepage-light-desktop.jpg) | ![homepage light mobile](https://raw.githubusercontent.com/emdash-cms/emdash/main/assets/templates/blog/latest/homepage-light-mobile.jpg) |
-| Dark | ![homepage dark desktop](https://raw.githubusercontent.com/emdash-cms/emdash/main/assets/templates/blog/latest/homepage-dark-desktop.jpg) | ![homepage dark mobile](https://raw.githubusercontent.com/emdash-cms/emdash/main/assets/templates/blog/latest/homepage-dark-mobile.jpg) |
-
-## Infrastructure
-
-- **Runtime:** Cloudflare Workers
-- **Database:** D1
-- **Storage:** R2
-- **Framework:** Astro with `@astrojs/cloudflare`
-
-## Local Development
+## Local development
 
 This project uses **npm** (see `package-lock.json`). It depends on the sibling
 repo `../indieweb-astro` via `file:` links — clone both side by side and build
@@ -56,22 +50,76 @@ pnpm install && pnpm -r build
 
 # in this repo
 npm install
-npx emdash dev              # runs migrations + type generation, then astro dev
-npx emdash seed seed/seed.json   # seed schema + demo content (first run)
+npx emdash dev                   # migrations + seed + type generation, then astro dev
 ```
 
-The admin UI is at `http://localhost:4321/_emdash/admin`.
+The site runs at `http://localhost:4321/`, the admin at
+`http://localhost:4321/_emdash/admin`. In dev a bypass link is printed to the
+console that signs you in as a dev admin without passkey setup.
+
+No environment variables are needed for local dev — see `.env.example`.
+IndieWeb media-lookup API keys (TMDB, RAWG, Last.fm, …) are entered in the
+admin under **IndieWeb → API Connections**, not env vars.
+
+## Testing
+
+```bash
+npm run typecheck   # astro check
+npm run a11y        # axe-core scan of key routes (needs the dev server running)
+
+# protocol logic unit tests live in the sibling monorepo:
+cd ../indieweb-astro && pnpm -r test   # indieweb-core (466+) + content-analysis (29)
+```
 
 ## Deploying
 
+One-time Cloudflare setup (your login, not automated):
+
 ```bash
-npm run deploy   # wrangler deploy (requires wrangler login + D1/R2 setup, see wrangler.jsonc)
+npx wrangler login
+npx wrangler d1 create opensourcetogether        # paste the id into wrangler.jsonc
+npx wrangler r2 bucket create opensourcetogether-media
+npm run deploy                                    # wrangler deploy
 ```
 
-Or click the deploy button above to set up the project in your Cloudflare account.
+Notes:
+- `worker_loaders` (used by the sandboxed webhook-notifier plugin) requires the
+  Workers **paid** plan. The IndieWeb and content-analysis plugins run trusted
+  and work on any plan; drop the `sandboxed` entry from `astro.config.mjs` and
+  the `worker_loaders` block from `wrangler.jsonc` if you stay on the free plan.
+- Uncomment the `routes` block in `wrangler.jsonc` once the
+  `opensourcetogether.dev` zone is on your account.
+- After first deploy, run the admin setup at `/_emdash/admin` and seed content
+  (`npx emdash seed seed/seed.json --remote` or author from scratch).
+- HTTPS/TLS, HTTP→HTTPS redirect, HSTS, and compression are handled by
+  Cloudflare in front of the worker.
 
-## See Also
+## specification.website — required tier
 
-- [Node.js variant](../blog) -- same template using SQLite and local file storage
-- [All templates](../)
-- [EmDash documentation](https://github.com/emdash-cms/emdash/tree/main/docs)
+All required-tier items pass or are handled by the platform:
+
+| Area | Status |
+|---|---|
+| Foundations (doctype, lang, charset, viewport, title) | ✅ in `Base.astro` |
+| SEO (meta robots, heading hierarchy, redirects, real 404 status) | ✅ verified |
+| Accessibility (contrast, alt text, labels, keyboard, focus, skip link, landmarks, reduced motion) | ✅ axe scan green + design-system focus/skip/motion rules |
+| Security headers (nosniff, frame-options, referrer-policy, permissions-policy) | ✅ EmDash middleware |
+| HTTPS / HSTS / compression / Cache-Control | ✅ Cloudflare (production) + immutable `_headers` for hashed assets |
+| Privacy (privacy policy; no non-essential cookies, so no consent banner needed) | ✅ `/pages/privacy` |
+| Resilience (custom 404 with correct status) | ✅ |
+| Stable URLs | ✅ template slugs unchanged |
+
+## Known limitations / deferred
+
+- **Direct silo APIs**: POSSE runs through Bridgy webmentions only. Direct
+  Mastodon/Bluesky OAuth posting is deferred.
+- **Micropub**: `create` only (form-encoded, JSON, and multipart fields).
+  `update`/`delete` actions and the media endpoint return not-implemented.
+- **Backfeed**: silo replies arrive only as Bridgy webmentions; no API polling.
+- **IndieAuth**: authorization requires an admin-role EmDash session; scopes
+  are limited to `create` + `profile`. Token introspection is plugin-internal.
+- **Content analysis**: English syllable heuristics; an admin page (pick a
+  post), not an in-editor sidebar — EmDash's plugin API has no editor-panel
+  surface yet.
+- **Production deploy** not run from this repo — needs your `wrangler login`
+  (see Deploying).
