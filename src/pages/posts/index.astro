@@ -1,8 +1,22 @@
 ---
 import { getEmDashCollection, getEntryTerms } from "emdash";
 import Base from "../../layouts/Base.astro";
-import { getReadingTime } from "../../utils/reading-time";
+import { extractText, getReadingTime } from "../../utils/reading-time";
 import { getKindFormat } from "../../utils/kind-format";
+
+// Title-less posts (notes, replies, …) show their body text in the
+// stream. Prefer the stored excerpt; fall back to extracting from
+// Portable Text for entries created before excerpts were derived.
+function streamText(post: {
+	data: { excerpt?: string | null; content?: unknown };
+}): string {
+	const excerpt = post.data.excerpt?.trim();
+	if (excerpt) return excerpt;
+	const text = extractText(
+		post.data.content as Parameters<typeof extractText>[0],
+	).trim();
+	return text.length > 180 ? `${text.slice(0, 177)}…` : text;
+}
 
 const { entries: posts, cacheHint } = await getEmDashCollection("posts");
 
@@ -91,7 +105,7 @@ const formatDate = (date: Date) =>
 								) : (
 									<p class="stream-note p-name">
 										<a class="u-url stream-note-link" href={`/posts/${post.id}`}>
-											{post.data.excerpt || `${kindFormat.label} from ${post.data.publishedAt?.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }) ?? "the stream"}`}
+											{streamText(post) || `${kindFormat.label} from ${post.data.publishedAt?.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }) ?? "the stream"}`}
 										</a>
 									</p>
 								)}

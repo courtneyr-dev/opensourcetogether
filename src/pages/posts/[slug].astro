@@ -103,13 +103,29 @@ const raw = post.data as unknown as Record<string, unknown>;
 const kindMeta = (
 	raw.kind_meta && typeof raw.kind_meta === "object" ? raw.kind_meta : {}
 ) as Record<string, unknown>;
+
+// Defense in depth: citation values render into href attributes, so
+// drop anything that is not a well-formed http(s) URL — even though
+// the composer and Micropub mapping validate on the way in.
+function safeHttpUrl(value: unknown): string | undefined {
+	if (typeof value !== "string") return undefined;
+	try {
+		const url = new URL(value);
+		return url.protocol === "http:" || url.protocol === "https:"
+			? value
+			: undefined;
+	} catch {
+		return undefined;
+	}
+}
+
 const d: Record<string, unknown> = {
 	...kindMeta,
-	inReplyTo: raw.in_reply_to,
-	likeOf: raw.like_of,
-	repostOf: raw.repost_of,
-	bookmarkOf: raw.bookmark_of,
-	quotationOf: raw.quotation_of,
+	inReplyTo: safeHttpUrl(raw.in_reply_to),
+	likeOf: safeHttpUrl(raw.like_of),
+	repostOf: safeHttpUrl(raw.repost_of),
+	bookmarkOf: safeHttpUrl(raw.bookmark_of),
+	quotationOf: safeHttpUrl(raw.quotation_of),
 	citationName: raw.citation_name,
 	citationAuthor: raw.citation_author,
 	rsvp: raw.rsvp,
@@ -128,11 +144,13 @@ const syndication = (
 	targets?: string[];
 	links?: Array<{ url: string; targetUid?: string }>;
 };
-const pendingSyndicationTargets = Array.isArray(syndication.targets)
-	? syndication.targets
-	: [];
+const pendingSyndicationTargets = (
+	Array.isArray(syndication.targets) ? syndication.targets : []
+).filter((t) => safeHttpUrl(t) !== undefined);
 const syndicationLinks = Array.isArray(syndication.links)
-	? syndication.links.filter((l) => l && typeof l.url === "string")
+	? syndication.links.filter(
+			(l) => l && safeHttpUrl(l.url) !== undefined,
+		)
 	: [];
 
 function syndicationLabel(url: string): string {
@@ -1384,7 +1402,7 @@ const fallbackHeading = `${kindDef?.name ?? "Post"}${publishedDateLabel ? ` — 
 		font-weight: var(--cr-weight-bold);
 		text-transform: uppercase;
 		letter-spacing: var(--cr-tracking-eyebrow);
-		color: var(--cr-marker);
+		color: var(--cr-marker-text);
 		margin-bottom: var(--spacing-4);
 	}
 

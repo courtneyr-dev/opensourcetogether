@@ -62,17 +62,36 @@ if (Astro.request.method === "POST") {
 	const status = form.get("status") === "draft" ? "draft" : "published";
 	const syndicateTargets = form.getAll("syndicate_to").filter(Boolean);
 
+	// Citation URLs are rendered into public href attributes — accept
+	// only well-formed http(s) URLs (never javascript: etc.).
+	const isHttpUrl = (value: string): boolean => {
+		try {
+			const url = new URL(value);
+			return url.protocol === "http:" || url.protocol === "https:";
+		} catch {
+			return false;
+		}
+	};
+
 	const needsCitation = kind in CITATION_FIELD;
 	if (!content && !title && !citationUrl) {
 		errorMessage = "Write something first.";
 	} else if (needsCitation && !citationUrl) {
 		errorMessage = `A URL is required for a ${kind} post.`;
+	} else if (citationUrl && !isHttpUrl(citationUrl)) {
+		errorMessage = "The citation URL must be a valid http(s) URL.";
 	} else if (!Astro.locals.emdash?.handleContentCreate) {
 		errorMessage = "EmDash content handlers unavailable — try again.";
 	} else {
 		const fields: Record<string, unknown> = { kind };
 		if (title) fields.title = title;
 		if (content) fields.content = textToPortableText(content);
+		// Title-less posts: archive/stream views render title-or-excerpt,
+		// so derive an excerpt from the body text.
+		if (!title && content) {
+			fields.excerpt =
+				content.length > 180 ? `${content.slice(0, 177)}…` : content;
+		}
 		if (needsCitation && citationUrl) {
 			fields[CITATION_FIELD[kind]] = citationUrl;
 		}

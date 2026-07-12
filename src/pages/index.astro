@@ -3,7 +3,22 @@ import { getEmDashCollection, getEntryTerms } from "emdash";
 import { Image } from "emdash/ui";
 import Base from "../layouts/Base.astro";
 import PostCard from "../components/PostCard.astro";
-import { getReadingTime } from "../utils/reading-time";
+import { extractText, getReadingTime } from "../utils/reading-time";
+
+// Title-less posts show body text where the excerpt would go. Prefer
+// the stored excerpt; fall back to Portable Text extraction for
+// entries created before excerpts were derived on save.
+function cardExcerpt(post: {
+	data: { excerpt?: string | null; content?: unknown };
+}): string | undefined {
+	const excerpt = post.data.excerpt?.trim();
+	if (excerpt) return excerpt;
+	const text = extractText(
+		post.data.content as Parameters<typeof extractText>[0],
+	).trim();
+	if (!text) return undefined;
+	return text.length > 180 ? `${text.slice(0, 177)}…` : text;
+}
 
 const { entries: posts, cacheHint } = await getEmDashCollection("posts");
 
@@ -177,7 +192,7 @@ function formatDate(date: Date | null | undefined) {
 							{gridPostsWithTags.map(({ post, tags, bylines }) => (
 								<PostCard
 									title={post.data.title ?? undefined}
-									excerpt={post.data.excerpt}
+									excerpt={cardExcerpt(post)}
 									featuredImage={post.data.featured_image}
 									href={`/posts/${post.id}`}
 									date={post.data.publishedAt ?? undefined}

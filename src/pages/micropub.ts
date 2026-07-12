@@ -107,11 +107,56 @@ export const GET: APIRoute = async (context) => {
 	);
 };
 
+/**
+ * Micropub creates are small (form fields / JSON, no media endpoint).
+ * The body is buffered BEFORE token verification, so cap it to keep
+ * unauthenticated callers from tying up Worker memory.
+ */
+const MAX_BODY_BYTES = 1_048_576;
+
+async function readBodyCapped(
+	request: Request,
+	maxBytes: number,
+): Promise<ArrayBuffer | null> {
+	const declared = Number(request.headers.get("content-length") ?? "");
+	if (Number.isFinite(declared) && declared > maxBytes) return null;
+
+	const reader = request.body?.getReader();
+	if (!reader) return request.arrayBuffer();
+
+	const chunks: Uint8Array[] = [];
+	let total = 0;
+	for (;;) {
+		const { done, value } = await reader.read();
+		if (done) break;
+		total += value.byteLength;
+		if (total > maxBytes) {
+			await reader.cancel().catch(() => {});
+			return null;
+		}
+		chunks.push(value);
+	}
+	const combined = new Uint8Array(total);
+	let offset = 0;
+	for (const chunk of chunks) {
+		combined.set(chunk, offset);
+		offset += chunk.byteLength;
+	}
+	return combined.buffer;
+}
+
 export const POST: APIRoute = async (context) => {
 	// Buffer the raw body so it can be parsed here AND forwarded intact
 	// if the request needs to be rewritten for handler escalation.
 	const contentType = context.request.headers.get("content-type") ?? "";
-	const rawBody = await context.request.arrayBuffer();
+	const rawBody = await readBodyCapped(context.request, MAX_BODY_BYTES);
+	if (rawBody === null) {
+		return oauthErrorResponse(
+			"invalid_request",
+			"Request body too large (max 1 MB; media uploads are not supported)",
+			413,
+		);
+	}
 
 	let body: unknown;
 	let formParams: URLSearchParams | undefined;
