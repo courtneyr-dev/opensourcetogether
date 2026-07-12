@@ -68,19 +68,27 @@ npm run typecheck   # astro check
 npm run a11y        # axe-core scan of key routes (needs the dev server running)
 
 # protocol logic unit tests live in the sibling monorepo:
-cd ../indieweb-astro && pnpm -r test   # indieweb-core (466+) + content-analysis (29)
+cd ../indieweb-astro && pnpm -r test   # indieweb-core (514) + content-analysis (29)
 ```
+
+For a full manual walkthrough of the IndieWeb plugin stack (admin pages,
+composer, IndieAuth→Micropub curl round-trip, webmention round-trip), see
+[docs/local-testing.md](docs/local-testing.md).
 
 ## Deploying
 
-One-time Cloudflare setup (your login, not automated):
+One command after authenticating wrangler (either `npx wrangler login`
+locally, or `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ACCOUNT_ID` env vars):
 
 ```bash
-npx wrangler login
-npx wrangler d1 create opensourcetogether        # paste the id into wrangler.jsonc
-npx wrangler r2 bucket create opensourcetogether-media
-npm run deploy                                    # wrangler deploy
+./scripts/cf-provision.sh
 ```
+
+The script is idempotent: it creates the D1 database, R2 bucket, and
+SESSION KV namespace (writing their ids into `wrangler.jsonc`), sets the
+`EMDASH_ENCRYPTION_KEY` secret (generated if not supplied — save the
+printed key), builds, and deploys. EmDash applies D1 migrations at runtime
+on first request, so there is no manual migration step.
 
 Notes:
 - `worker_loaders` (used by the sandboxed webhook-notifier plugin) requires the
@@ -88,9 +96,11 @@ Notes:
   and work on any plan; drop the `sandboxed` entry from `astro.config.mjs` and
   the `worker_loaders` block from `wrangler.jsonc` if you stay on the free plan.
 - Uncomment the `routes` block in `wrangler.jsonc` once the
-  `opensourcetogether.dev` zone is on your account.
-- After first deploy, run the admin setup at `/_emdash/admin` and seed content
-  (`npx emdash seed seed/seed.json --remote` or author from scratch).
+  `opensourcetogether.dev` zone is on your account, then redeploy.
+- After first deploy, open `/_emdash/admin` and complete first-run setup
+  (the first passkey user becomes admin), then author content or recreate
+  the seed entries from the admin. `emdash seed` only targets local
+  databases.
 - HTTPS/TLS, HTTP→HTTPS redirect, HSTS, and compression are handled by
   Cloudflare in front of the worker.
 
@@ -121,5 +131,6 @@ All required-tier items pass or are handled by the platform:
 - **Content analysis**: English syllable heuristics; an admin page (pick a
   post), not an in-editor sidebar — EmDash's plugin API has no editor-panel
   surface yet.
-- **Production deploy** not run from this repo — needs your `wrangler login`
-  (see Deploying).
+- **Production deploy** not yet run — needs Cloudflare credentials
+  (see Deploying; `scripts/cf-provision.sh` does everything once
+  wrangler is authenticated).
