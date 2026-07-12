@@ -1,28 +1,39 @@
 {
 	"$schema": "node_modules/wrangler/config-schema.json",
-	"name": "my-emdash-site",
+	"name": "opensourcetogether",
 	"main": "./src/worker.ts",
 	"compatibility_date": "2026-03-29",
 	"compatibility_flags": [
 		"nodejs_compat"
 	],
+	// Custom domain routing — uncomment once the zone is on this Cloudflare
+	// account. Until then the worker serves at opensourcetogether.workers.dev.
+	// "routes": [
+	// 	{ "pattern": "opensourcetogether.dev", "custom_domain": true }
+	// ],
 	"d1_databases": [
 		{
 			"binding": "DB",
-			"database_name": "my-emdash-site",
-			// Run `wrangler d1 create my-emdash-site` and paste the ID here
+			"database_name": "opensourcetogether",
+			// Run `wrangler d1 create opensourcetogether` and paste the ID here
+			// before the first deploy. Local dev (emdash dev / wrangler dev)
+			// works without it via miniflare.
+			"database_id": "REPLACE_WITH_D1_DATABASE_ID",
 		},
 	],
 	"r2_buckets": [
 		{
 			"binding": "MEDIA",
-			"bucket_name": "my-emdash-media",
+			// Run `wrangler r2 bucket create opensourcetogether-media` first.
+			"bucket_name": "opensourcetogether-media",
 		},
 	],
 	"observability": {
 		"enabled": true,
 	},
-	// Worker Loader for plugin sandboxing
+	// Worker Loader for plugin sandboxing (webhook-notifier runs sandboxed).
+	// Requires the Workers paid plan in production; first-party plugins
+	// (indieweb, content-analysis) run trusted and do not need it.
 	"worker_loaders": [
 		{
 			"binding": "LOADER",
