@@ -1,8 +1,7 @@
 import cloudflare from "@astrojs/cloudflare";
 import react from "@astrojs/react";
-import { d1, r2, sandbox } from "@emdash-cms/cloudflare";
+import { d1, r2 } from "@emdash-cms/cloudflare";
 import { formsPlugin } from "@emdash-cms/plugin-forms";
-import webhookNotifier from "@emdash-cms/plugin-webhook-notifier";
 import { emdashContentAnalysis } from "@opensourcetogether/emdash-content-analysis";
 import { emdashIndieweb } from "@opensourcetogether/emdash-indieweb";
 import { defineConfig } from "astro/config";
@@ -38,9 +37,14 @@ export default defineConfig({
 				// Yoast-style readability + keyphrase analysis admin page.
 				emdashContentAnalysis(),
 			],
-			sandboxed: [webhookNotifier],
-			sandboxRunner: sandbox(),
-			marketplace: "https://marketplace.emdashcms.com",
+			// Marketplace + sandboxed webhook-notifier need worker_loaders
+			// (Dynamic Workers / Workers Paid). Re-enable together:
+			//   import { d1, r2, sandbox } from "@emdash-cms/cloudflare";
+			//   import webhookNotifier from "@emdash-cms/plugin-webhook-notifier";
+			//   sandboxed: [webhookNotifier],
+			//   sandboxRunner: sandbox(),
+			//   marketplace: "https://marketplace.emdashcms.com",
+			// and uncomment worker_loaders in wrangler.jsonc.
 		}),
 	],
 	devToolbar: { enabled: false },

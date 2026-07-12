@@ -48,9 +48,12 @@ if grep -q "REPLACE_WITH_D1_DATABASE_ID" "$CONFIG"; then
   else
     echo "$OUT" | grep -qi "already exists" || { echo "$OUT" >&2; exit 1; }
     echo "    (database already exists, reusing)"
-    OUT=$($WRANGLER d1 info opensourcetogether 2>&1)
+    # Prefer `d1 list` — `d1 info` reads database_id from wrangler.jsonc and
+    # fails while the placeholder is still present.
+    OUT=$($WRANGLER d1 list 2>&1)
   fi
-  DB_ID=$(echo "$OUT" | grep -oE '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}' | head -1)
+  DB_ID=$(echo "$OUT" | grep -E 'opensourcetogether' | grep -oE '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}' | head -1)
+  [ -n "$DB_ID" ] || DB_ID=$(echo "$OUT" | grep -oE '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}' | head -1)
   [ -n "$DB_ID" ] || { echo "ERROR: could not extract D1 database id" >&2; exit 1; }
   sed -i.bak "s/REPLACE_WITH_D1_DATABASE_ID/$DB_ID/" "$CONFIG" && rm -f "$CONFIG.bak"
   echo "    database_id = $DB_ID written to $CONFIG"
@@ -60,19 +63,27 @@ fi
 
 # --- 2. R2 bucket ------------------------------------------------------------
 echo "==> Creating R2 bucket 'opensourcetogether-media' (skips if it exists)..."
-$WRANGLER r2 bucket create opensourcetogether-media 2>&1 | grep -vi "already exists" || true
+if $WRANGLER r2 bucket list 2>/dev/null | grep -q "opensourcetogether-media"; then
+  echo "    (bucket already exists, skipping)"
+else
+  $WRANGLER r2 bucket create opensourcetogether-media 2>&1 | grep -vi "already exists" || true
+fi
 
 # --- 3. SESSION KV namespace --------------------------------------------------
 if grep -q "REPLACE_WITH_KV_NAMESPACE_ID" "$CONFIG"; then
   echo "==> Creating KV namespace 'SESSION'..."
-  OUT=$($WRANGLER kv namespace create SESSION 2>&1) || {
+  if OUT=$($WRANGLER kv namespace create SESSION 2>&1); then
+    echo "$OUT"
+    KV_ID=$(echo "$OUT" | grep -oE '"?id"?[": =]+[0-9a-f]{32}' | grep -oE '[0-9a-f]{32}' | head -1)
+  else
     echo "$OUT" | grep -qi "already exists" || { echo "$OUT" >&2; exit 1; }
-    echo "    (namespace already exists — find its id with 'wrangler kv namespace list' and paste it into $CONFIG)"
-    exit 1
-  }
-  echo "$OUT"
-  KV_ID=$(echo "$OUT" | grep -oE '"?id"?[": =]+[0-9a-f]{32}' | grep -oE '[0-9a-f]{32}' | head -1)
-  [ -n "$KV_ID" ] || { echo "ERROR: could not extract KV namespace id" >&2; exit 1; }
+    echo "    (SESSION already exists, looking up id)"
+    LIST=$($WRANGLER kv namespace list 2>&1)
+    KV_ID=$(echo "$LIST" | grep -i '"title": "SESSION"' -A1 -B1 | grep -oE '[0-9a-f]{32}' | head -1)
+    # Prefer a prior opensourcetogether-session namespace if SESSION title isn't present.
+    [ -n "$KV_ID" ] || KV_ID=$(echo "$LIST" | grep -i 'opensourcetogether-session' -B2 -A1 | grep -oE '[0-9a-f]{32}' | head -1)
+  fi
+  [ -n "$KV_ID" ] || { echo "ERROR: could not extract KV namespace id" >&2; echo "$OUT" >&2; exit 1; }
   sed -i.bak "s/REPLACE_WITH_KV_NAMESPACE_ID/$KV_ID/" "$CONFIG" && rm -f "$CONFIG.bak"
   echo "    kv id = $KV_ID written to $CONFIG"
 else
