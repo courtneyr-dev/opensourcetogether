@@ -571,7 +571,8 @@ const isLoggedIn = !!Astro.locals.user;
 			:global(.site-search-input):focus-visible {
 				outline: 3px solid var(--cr-focus-ring) !important;
 				outline-offset: 2px;
-				box-shadow: none;
+				/* Ink ring keeps the indicator ≥3:1 on any surface. */
+				box-shadow: 0 0 0 2px var(--cr-ink);
 			}
 
 			:global(.site-search-results) {
@@ -798,6 +799,9 @@ const isLoggedIn = !!Astro.locals.user;
 			.theme-btn:focus-visible {
 				outline: 3px solid var(--cr-focus-ring);
 				outline-offset: 2px;
+				/* Restore the ink contrast ring the base button style provides
+				   (the .theme-btn reset sets box-shadow: none). */
+				box-shadow: 0 0 0 2px var(--cr-ink);
 			}
 
 			.theme-btn.active {

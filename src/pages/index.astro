@@ -5,9 +5,9 @@ import Base from "../layouts/Base.astro";
 import PostCard from "../components/PostCard.astro";
 import { extractText, getReadingTime } from "../utils/reading-time";
 
-// Title-less posts show body text where the excerpt would go. Prefer
-// the stored excerpt; fall back to Portable Text extraction for
-// entries created before excerpts were derived on save.
+// Card excerpt for every grid post: prefer the stored excerpt, fall
+// back to text extracted from the body (this also covers title-less
+// posts created before excerpts were derived on save).
 function cardExcerpt(post: {
 	data: { excerpt?: string | null; content?: unknown };
 }): string | undefined {
