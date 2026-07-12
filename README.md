@@ -91,10 +91,12 @@ printed key), builds, and deploys. EmDash applies D1 migrations at runtime
 on first request, so there is no manual migration step.
 
 Notes:
-- `worker_loaders` (used by the sandboxed webhook-notifier plugin) requires the
-  Workers **paid** plan. The IndieWeb and content-analysis plugins run trusted
-  and work on any plan; drop the `sandboxed` entry from `astro.config.mjs` and
-  the `worker_loaders` block from `wrangler.jsonc` if you stay on the free plan.
+- `worker_loaders` (Dynamic Workers — used by sandboxed marketplace plugins and
+  webhook-notifier) requires the Workers **paid** plan. IndieWeb and
+  content-analysis run trusted and work on any plan. On the free plan, leave
+  `sandboxed` / `sandboxRunner` / `marketplace` unset in `astro.config.mjs` and
+  keep `worker_loaders` commented out in `wrangler.jsonc` (this repo's current
+  production config).
 - Uncomment the `routes` block in `wrangler.jsonc` once the
   `opensourcetogether.dev` zone is on your account, then redeploy.
 - After first deploy, open `/_emdash/admin` and complete first-run setup

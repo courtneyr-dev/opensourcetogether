@@ -18,7 +18,7 @@
 			// Run `wrangler d1 create opensourcetogether` and paste the ID here
 			// before the first deploy. Local dev (emdash dev / wrangler dev)
 			// works without it via miniflare.
-			"database_id": "REPLACE_WITH_D1_DATABASE_ID",
+			"database_id": "85fb71ea-c706-433b-94d0-c38126af0bb9",
 		},
 	],
 	"r2_buckets": [
@@ -34,20 +34,17 @@
 	"kv_namespaces": [
 		{
 			"binding": "SESSION",
-			"id": "REPLACE_WITH_KV_NAMESPACE_ID",
+			"id": "c48858fa5700482da5ed74e0b83ab4a8",
 		},
 	],
 	"observability": {
 		"enabled": true,
 	},
-	// Worker Loader for plugin sandboxing (webhook-notifier runs sandboxed).
-	// Requires the Workers paid plan in production; first-party plugins
-	// (indieweb, content-analysis) run trusted and do not need it.
-	"worker_loaders": [
-		{
-			"binding": "LOADER",
-		},
-	],
+	// Worker Loader (Dynamic Workers) requires Workers Paid. Uncomment together
+	// with sandboxed webhook-notifier in astro.config.mjs once upgraded:
+	// "worker_loaders": [
+	// 	{ "binding": "LOADER" }
+	// ],
 	// Drives scheduled publishing, plugin cron, and maintenance (see src/worker.ts)
 	"triggers": {
 		"crons": ["* * * * *"],
