@@ -108,6 +108,10 @@
 
   /* Zine accents */
   --cr-marker:    var(--cr-ut-orange);
+  /* Marker-orange as TEXT on the ivory surface fails WCAG (2.4:1).
+     Use this darker companion whenever marker color is applied to
+     readable text (eyebrows, list markers, accent headings): 5.3:1. */
+  --cr-marker-text: #a35400;
   --cr-highlight: var(--cr-selective-yellow);
 
   /* Callouts */
@@ -370,6 +374,9 @@
     --cr-tape:     #4a3f1c;
     --cr-tape-ink: var(--cr-selective-yellow);
 
+    /* Marker orange passes 6.8:1 as text on photocopier black. */
+    --cr-marker-text: var(--cr-ut-orange);
+
     --cr-primary:       var(--cr-selective-yellow);
     --cr-primary-hover: var(--cr-sky-blue);
     --cr-primary-ink:   var(--cr-russian-violet);
@@ -453,6 +460,9 @@
 
     --cr-tape:     #4a3f1c;
     --cr-tape-ink: var(--cr-selective-yellow);
+
+    /* Marker orange passes 6.8:1 as text on photocopier black. */
+    --cr-marker-text: var(--cr-ut-orange);
 
     --cr-primary:       var(--cr-selective-yellow);
     --cr-primary-hover: var(--cr-sky-blue);
@@ -557,8 +567,11 @@ a {
 a:hover { color: var(--cr-link-hover); }
 a:visited { color: var(--cr-link-visited); }
 a:focus-visible {
+  /* Two-layer indicator: the inner 2px ink ring guarantees ≥3:1
+     against any surface (the yellow alone is ~1.7:1 on ivory). */
   outline: 3px solid var(--cr-focus-ring);
   outline-offset: 2px;
+  box-shadow: 0 0 0 2px var(--cr-ink);
   border-radius: var(--cr-radius-xs);
 }
 
@@ -681,7 +694,7 @@ ul { list-style: none; }
 ul > li { position: static; padding-left: 0; }
 ul > li::before { content: none; }
 ol { list-style: decimal; }
-ol > li::marker { color: var(--cr-marker); font-family: var(--cr-font-accent); font-weight: var(--cr-weight-bold); }
+ol > li::marker { color: var(--cr-marker-text); font-family: var(--cr-font-accent); font-weight: var(--cr-weight-bold); }
 li { margin: var(--cr-space-2xs) 0; }
 li > ul, li > ol { margin-top: var(--cr-space-2xs); }
 
@@ -755,6 +768,13 @@ input[type="password"], input[type="number"], input[type="tel"], textarea, selec
 input:focus-visible, textarea:focus-visible, select:focus-visible {
   outline: 3px solid var(--cr-focus-ring);
   outline-offset: 2px;
+  box-shadow: 0 0 0 2px var(--cr-ink);
+}
+button:focus-visible, input[type="submit"]:focus-visible, input[type="button"]:focus-visible {
+  outline: 3px solid var(--cr-focus-ring);
+  outline-offset: 2px;
+  /* Preserve the zine hard shadow while adding the contrast ring. */
+  box-shadow: 0 0 0 2px var(--cr-ink), var(--cr-shadow-hard);
 }
 button, input[type="submit"], input[type="button"] {
   font-family: var(--cr-font-accent);

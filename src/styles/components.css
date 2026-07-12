@@ -56,7 +56,7 @@
   font-weight: var(--cr-weight-bold);
   text-transform: uppercase;
   letter-spacing: var(--cr-tracking-eyebrow);
-  color: var(--cr-marker);
+  color: var(--cr-marker-text);
   margin-bottom: var(--cr-space-2xs);
 }
 
@@ -538,7 +538,7 @@
 .cr-hero__title--accent {
   /* alternate slab-serif treatment for headings that lead a section */
   font-weight: var(--cr-weight-extrabold);
-  color: var(--cr-marker);
+  color: var(--cr-marker-text);
 }
 
 .cr-hero__lead {
