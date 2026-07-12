@@ -19,6 +19,7 @@
 		"@emdash-cms/plugin-forms": "^0.2.4",
 		"@emdash-cms/plugin-webhook-notifier": "^0.2.0",
 		"@jdevalk/astro-seo-graph": "^0.4.2",
+		"@opensourcetogether/emdash-content-analysis": "file:../indieweb-astro/packages/emdash-content-analysis",
 		"@opensourcetogether/emdash-indieweb": "file:../indieweb-astro/packages/emdash-indieweb",
 		"@opensourcetogether/indieweb-core": "file:../indieweb-astro/packages/indieweb-core",
 		"astro": "^6.1.2",

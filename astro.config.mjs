@@ -3,6 +3,7 @@ import react from "@astrojs/react";
 import { d1, r2, sandbox } from "@emdash-cms/cloudflare";
 import { formsPlugin } from "@emdash-cms/plugin-forms";
 import webhookNotifier from "@emdash-cms/plugin-webhook-notifier";
+import { emdashContentAnalysis } from "@opensourcetogether/emdash-content-analysis";
 import { emdashIndieweb } from "@opensourcetogether/emdash-indieweb";
 import { defineConfig } from "astro/config";
 import emdash from "emdash/astro";
@@ -34,6 +35,8 @@ export default defineConfig({
 					siteUrl: "https://opensourcetogether.dev",
 					author: { name: "Courtney Robertson", url: "https://courtneyr.dev" },
 				}),
+				// Yoast-style readability + keyphrase analysis admin page.
+				emdashContentAnalysis(),
 			],
 			sandboxed: [webhookNotifier],
 			sandboxRunner: sandbox(),
