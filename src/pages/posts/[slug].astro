@@ -4,6 +4,7 @@ import {
 	getEmDashCollection,
 	getEntryTerms,
 	getSeoMeta,
+	getSiteSettings,
 } from "emdash";
 import {
 	Image,
@@ -54,12 +55,20 @@ function getImageUrl(img: unknown): string | undefined {
 }
 const featuredImageUrl = getImageUrl(post.data.featured_image);
 
-// Generate SEO meta from content
+const siteSettings = await getSiteSettings();
+const siteTitle = siteSettings.title || "My Blog";
+const siteSeo = siteSettings.seo;
+
+// Generate SEO meta from content (site title template + separator from settings)
 const seo = getSeoMeta(post, {
-	siteTitle: "My Blog",
+	siteTitle,
 	siteUrl: Astro.url.origin,
 	path: `/posts/${slug}`,
 	defaultOgImage: featuredImageUrl,
+	collection: "posts",
+	titleSeparator: siteSeo?.titleSeparator,
+	titleTemplate: siteSeo?.titleTemplate,
+	titleTemplates: siteSeo?.titleTemplates,
 });
 
 // Get tags for this post
